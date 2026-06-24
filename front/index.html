@@ -2,40 +2,271 @@
 
   Pantalla de inicio. Solo presentacion, sin logica de negocio:
   frase, logo, imagen ilustrativa y boton para ir al login.
--->
-<!DOCTYPE html>
+--><!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Preguntas Anonimas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preguntas Anónimas — ORT</title>
   <link rel="stylesheet" href="css/estilos.css" />
   <style>
-    .inicio {
-      text-align: center;
-      max-width: 600px;
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    .inicio img {
-      width: 100%;
-      border-radius: 8px;
-      margin: 20px 0;
+
+    /* ── Navbar ── */
+    .nav-landing {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 64px;
+      background: rgba(255,255,255,.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
     }
-    .frase {
-      font-size: 20px;
-      font-style: italic;
-      color: #444;
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 18px; font-weight: 800; color: var(--blue);
+    }
+    .nav-logo .icon {
+      width: 36px; height: 36px; background: var(--blue);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 18px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 80px 24px 40px;
+      position: relative; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 60% 30%, var(--blue-100) 0%, transparent 70%),
+                  radial-gradient(ellipse 50% 40% at 10% 80%, #EDE9FE 0%, transparent 60%);
+      opacity: .5;
+    }
+    .hero-inner {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; max-width: 1100px; width: 100%;
+      align-items: center;
+    }
+    .hero-text { }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--blue-50); color: var(--blue);
+      border: 1px solid var(--blue-100);
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-size: 3rem; font-weight: 800; line-height: 1.15;
+      color: var(--text); margin-bottom: 20px;
+    }
+    .hero-title span { color: var(--blue); }
+    .hero-subtitle {
+      font-size: 1.1rem; color: var(--text-muted);
+      line-height: 1.6; margin-bottom: 36px; max-width: 460px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-image-wrap {
+      position: relative;
+    }
+    .hero-image-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .class-preview {
+      background: var(--bg); border-radius: 12px; padding: 16px;
+      margin-bottom: 16px;
+    }
+    .class-preview h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .class-preview p  { font-size: 12px; color: var(--text-muted); }
+    .question-preview {
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 10px;
+      border-left: 4px solid var(--cat-duda);
+    }
+    .question-preview:nth-child(2) { border-left-color: var(--cat-desarrollo); }
+    .question-preview:nth-child(3) { border-left-color: var(--cat-curiosidad); }
+    .qp-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .qp-anon { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+    .qp-text { font-size: 13px; color: var(--text); }
+
+    /* Floating pills */
+    .hero-pill {
+      position: absolute;
+      background: white; border: 1px solid var(--border);
+      border-radius: 24px; padding: 8px 14px;
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+      white-space: nowrap;
+    }
+    .pill-1 { top: -12px; right: 20px; }
+    .pill-2 { bottom: -12px; left: 10px; color: var(--blue); }
+
+    /* ── Features ── */
+    .features {
+      padding: 80px 24px;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .features-title {
+      text-align: center; margin-bottom: 48px;
+    }
+    .features-title h2 { font-size: 2rem; }
+    .features-title p  { color: var(--text-muted); margin-top: 8px; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    }
+    .feature-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px;
+      transition: all .2s;
+    }
+    .feature-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 16px; margin-bottom: 8px; }
+    .feature-card p  { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      color: var(--text-muted); font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+      .hero-title { font-size: 2.2rem; }
+      .hero-image-wrap { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
     }
   </style>
 </head>
 <body>
-  <div class="contenedor inicio">
-    <h1>Preguntas Anonimas</h1>
-    <p class="frase">"La pregunta que no haces hoy es la duda que te queda para siempre."</p>
 
-    <img src="assets/alumnos-aprendiendo.jpg" alt="Alumnos aprendiendo en clase" />
+  <!-- Navbar -->
+  <nav class="nav-landing">
+    <div class="nav-logo">
+      <div class="icon">💬</div>
+      Anónimas
+    </div>
+    <a href="login/login.html" class="btn btn-primary">Iniciar sesión</a>
+  </nav>
 
-    <button onclick="window.location.href='login/login.html'">
-      Iniciar sesion
-    </button>
-  </div>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-eyebrow">🎓 Para colegios ORT</div>
+        <h1 class="hero-title">
+          La pregunta que no<br/> haces <span>queda<br/> sin respuesta.</span>
+        </h1>
+        <p class="hero-subtitle">
+          Plataforma de preguntas anónimas en tiempo real. 
+          Sin vergüenza, sin interrupciones. El docente recibe todas las dudas 
+          ordenadas por prioridad.
+        </p>
+        <div class="hero-actions">
+          <a href="login/login.html" class="btn btn-primary btn-lg">Ingresar al aula →</a>
+        </div>
+      </div>
+
+      <div class="hero-image-wrap">
+        <div class="hero-pill pill-1">🔴 En clase · 24 alumnos</div>
+        <div class="hero-image-card">
+          <div class="class-preview">
+            <h4>Matemática — 5°A</h4>
+            <p>Prof. González · Aula 204</p>
+          </div>
+          <div class="question-preview">
+            <div class="qp-top">
+              <span class="qp-anon">Anónimo</span>
+              <span class="cat-tag tag-duda">Duda puntual</span>
+            </div>
+            <p class="qp-text">¿Por qué se invierte el signo al dividir una inecuación?</p>
+          </div>
+          <div class="question-preview">
+            <div class="qp-top">
+              <span class="qp-anon">Anónimo</span>
+              <span class="cat-tag tag-desarrollo">Desarrollo</span>
+            </div>
+            <p class="qp-text">¿Podés explicar de nuevo los límites laterales?</p>
+          </div>
+          <div class="question-preview">
+            <div class="qp-top">
+              <span class="qp-anon">Valentina M.</span>
+              <span class="cat-tag tag-curiosidad">Curiosidad</span>
+            </div>
+            <p class="qp-text">¿Esto se usa en programación también?</p>
+          </div>
+        </div>
+        <div class="hero-pill pill-2">✅ 3 preguntas respondidas</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="features-title">
+      <h2>Diseñada para el aula real</h2>
+      <p>Sin instalación, sin cuentas extra. Solo ingresás con tu mail ORT.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#EFF6FF">🎭</div>
+        <h3>Anonimato inteligente</h3>
+        <p>Preguntá sin que nadie sepa quién sos. Si la misma duda se repite mucho, el sistema avisa que podría dejar de ser anónima.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#D1FAE5">⚡</div>
+        <h3>Tiempo real</h3>
+        <p>Las preguntas aparecen en la pantalla del profesor al instante. Nada de mails ni formularios que llegan después de clase.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#EDE9FE">📊</div>
+        <h3>Prioridad automática</h3>
+        <p>Si varios alumnos tienen la misma duda, sube al tope de la lista automáticamente. El docente sabe qué explicar primero.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#FEF3C7">🏷️</div>
+        <h3>5 categorías</h3>
+        <p>Desarrollo, duda puntual, curiosidad, repetir/reformular, significado. Cada una con su color para que el docente entienda de un vistazo.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#FEE2E2">📬</div>
+        <h3>Preguntas fuera de clase</h3>
+        <p>¿Se te ocurrió la duda a las 10 de la noche? Mandala igual. Aparece al inicio de la próxima clase.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#ECFEFF">🛡️</div>
+        <h3>Moderación</h3>
+        <p>El docente puede eliminar preguntas inapropiadas y, de ser necesario, expulsar al usuario de la sesión.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="nav-logo">
+      <div class="icon" style="width:24px;height:24px;font-size:12px;border-radius:6px">💬</div>
+      Anónimas · ORT
+    </div>
+    <p>Hackathon 2026 — Preguntas Anónimas para el Aula</p>
+  </footer>
+
 </body>
 </html>

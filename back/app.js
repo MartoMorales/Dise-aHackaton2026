@@ -1,11 +1,11 @@
-
 require("dotenv").config();
 const express = require("express");
 const http = require("http");
+const path = require("path");
 const cors = require("cors");
-const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 
+const conectarDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const classRoutes = require("./routes/classRoutes");
 const questionRoutes = require("./routes/questionRoutes");
@@ -23,7 +23,7 @@ const io = new Server(server, {
 // Middlewares globales
 app.use(cors());
 app.use(express.json());
-app.use(express.static("../front")); // Sirve el frontend de prueba
+app.use(express.static(path.join(__dirname, "../../front"))); // Sirve el frontend de prueba
 
 // Rutas REST
 app.use("/api/auth", authRoutes);
@@ -35,15 +35,11 @@ app.use("/api/moderation", moderationRoutes);
 initClassSocket(io);
 
 // Conexión a MongoDB y arranque del servidor
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB conectado");
-    server.listen(process.env.PORT, () => {
-      console.log(`🚀 Servidor corriendo en http://localhost:${process.env.PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ Error conectando a MongoDB:", err.message);
-    process.exit(1);
+async function start() {
+  await conectarDB();
+  server.listen(process.env.PORT, () => {
+    console.log(`🚀 Servidor corriendo en http://localhost:${process.env.PORT}`);
   });
+}
+
+start();

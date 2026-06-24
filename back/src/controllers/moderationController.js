@@ -3,44 +3,57 @@
 
 const Question = require("../models/Question");
 
-// Lista negra de sockets temporal (en memoria, se resetea al reiniciar servidor)
-const bannedSockets = new Set();
+// Lista negra de sesiones, temporal (en memoria, se resetea al reiniciar servidor)
+const bannedSessions = new Set();
 
 /**
  * DELETE /api/moderation/question/:id — Funcionalidad 12
- * Marca la pregunta como reportada y la elimina de la BD.
+ * Marca la pregunta como reportada, expone el autor, y la elimina de la BD.
  * Solo accesible por el profesor.
  */
 async function deleteQuestion(req, res) {
-  const question = await Question.findById(req.params.id);
-  if (!question) return res.status(404).json({ message: "Pregunta no encontrada" });
+  try {
+    const question = await Question.findById(req.params.id);
+    if (!question) return res.status(404).json({ message: "Pregunta no encontrada" });
 
-  // Expone el autor para el panel de moderación antes de borrar
-  const authorSession = question.authorSession;
+    // Marca como reportada antes de borrar, para dejar registro del motivo
+    question.status = "reportada";
+    await question.save();
 
-  await Question.findByIdAndDelete(req.params.id);
-  res.json({ message: "Pregunta eliminada", authorSession });
+    const authorSession = question.authorSession;
+
+    await Question.findByIdAndDelete(req.params.id);
+    res.json({ message: "Pregunta eliminada", authorSession });
+  } catch (err) {
+    console.error("Error en deleteQuestion:", err.message);
+    res.status(500).json({ message: "Error al eliminar la pregunta" });
+  }
 }
 
 /**
  * POST /api/moderation/ban — Funcionalidad 13
- * Agrega el socketId del infractor a la lista negra.
+ * Agrega la sesión del infractor a la lista negra.
  * La desconexión real se maneja en classSocket.js.
- * Body: { socketId }
+ * Body: { sessionId }
  */
 async function banUser(req, res) {
-  const { socketId } = req.body;
-  if (!socketId) return res.status(400).json({ message: "socketId requerido" });
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ message: "sessionId requerido" });
 
-  bannedSockets.add(socketId);
-  res.json({ message: "Usuario baneado", socketId });
+    bannedSessions.add(sessionId);
+    res.json({ message: "Usuario baneado", sessionId });
+  } catch (err) {
+    console.error("Error en banUser:", err.message);
+    res.status(500).json({ message: "Error al banear usuario" });
+  }
 }
 
 /**
- * Verifica si un socketId está baneado (usado internamente por classSocket).
+ * Verifica si una sesión está baneada (usado internamente por classSocket).
  */
-function isBanned(socketId) {
-  return bannedSockets.has(socketId);
+function isBanned(sessionId) {
+  return bannedSessions.has(sessionId);
 }
 
 module.exports = { deleteQuestion, banUser, isBanned };

@@ -1,11 +1,11 @@
 // sockets/classSocket.js — Funcionalidades 4, 5, 6, 7, 9, 10 y 13
 // Gestiona toda la comunicación en tiempo real de las salas de clase
 
-const Question = require("../models/Question");
 const Class = require("../models/Class");
-const { mergeIfRedundant } = require("../utils/questionMerger");
-const { calculateScore, sortByPriority } = require("../utils/priorityCalculator");
 const { isBanned } = require("../controllers/moderationController");
+const { processNewQuestion } = require("../services/questionService");
+const Question = require("../models/Question");
+const { sortByPriority } = require("../utils/priorityCalculator");
 
 /**
  * Inicializa todos los eventos de Socket.io.
@@ -15,107 +15,114 @@ function initClassSocket(io) {
   io.on("connection", (socket) => {
     console.log(`🔌 Socket conectado: ${socket.id}`);
 
-    // Funcionalidad 13: rechazar sockets baneados en la reconexión
-    if (isBanned(socket.id)) {
-      socket.emit("kicked", { message: "Fuiste expulsado de la clase" });
-      socket.disconnect(true);
-      return;
-    }
-
     // ─── Funcionalidad 5: UNIRSE A SALA ───────────────────────────────────────
     // Evento: join_class
-    // Payload: { classId, role: "profesor"|"alumno", sessionId }
-    socket.on("join_class", async ({ classId, role, sessionId }) => {
-      const cls = await Class.findById(classId);
-      if (!cls || cls.status !== "activa") {
-        socket.emit("error", { message: "Clase no activa o inexistente" });
-        return;
+    // Payload: { code, role: "profesor"|"alumno", sessionId }
+    socket.on("join_class", async ({ code, role, sessionId }) => {
+      try {
+        if (!code) {
+          socket.emit("error", { message: "Código requerido" });
+          return;
+        }
+
+        // Funcionalidad 13: rechazar sesiones baneadas al unirse
+        const candidateSession = sessionId || socket.id;
+        if (isBanned(candidateSession)) {
+          socket.emit("kicked", { message: "Fuiste expulsado de la clase" });
+          socket.disconnect(true);
+          return;
+        }
+
+        const cls = await Class.findOne({ code: code.toUpperCase(), status: "activa" });
+        if (!cls) {
+          socket.emit("error", { message: "Clase no activa o inexistente" });
+          return;
+        }
+
+        const classId = cls._id.toString();
+
+        socket.join(classId);
+        socket.data.classId = classId;
+        socket.data.role = role;
+        socket.data.sessionId = candidateSession;
+
+        socket.emit("class_info", {
+          classId,
+          name: cls.name,
+          subject: cls.subject,
+          course: cls.course,
+          schedule: cls.schedule,
+          code: cls.code,
+        });
+
+        // Funcionalidad 6: notifica al profesor la cantidad actualizada
+        emitStudentCount(io, classId);
+
+        console.log(`👤 Socket ${socket.id} unido a clase ${classId} como ${role}`);
+      } catch (err) {
+        console.error("Error en join_class:", err.message);
+        socket.emit("error", { message: "Error al unirse a la clase" });
       }
-
-      socket.join(classId); // Une al socket a la sala de la clase
-      socket.data.classId = classId;
-      socket.data.role = role;
-      socket.data.sessionId = sessionId || socket.id;
-
-      // Envía info de la clase al que se une
-      socket.emit("class_info", {
-        name: cls.name,
-        subject: cls.subject,
-        course: cls.course,
-        schedule: cls.schedule,
-        code: cls.code,
-      });
-
-      // Funcionalidad 6: notifica al profesor la cantidad actualizada
-      emitStudentCount(io, classId);
-
-      console.log(`👤 Socket ${socket.id} unido a clase ${classId} como ${role}`);
     });
 
     // ─── Funcionalidad 7: ENVIAR PREGUNTA ─────────────────────────────────────
     // Evento: send_question
     // Payload: { classId, text, category }
     socket.on("send_question", async ({ classId, text, category }) => {
-      // Validaciones
-      if (!text || text.trim().length === 0 || text.length > 500) {
-        socket.emit("error", { message: "Pregunta inválida" });
-        return;
+      try {
+        if (!text || text.trim().length === 0 || text.length > 500) {
+          socket.emit("error", { message: "Pregunta inválida" });
+          return;
+        }
+
+        // Funcionalidades 7, 8, 9 centralizadas en un único servicio
+        const { question, merged, sortedList } = await processNewQuestion({
+          classId,
+          text,
+          category,
+          authorSession: socket.data.sessionId || socket.id,
+        });
+
+        io.to(classId).emit("question_update", { question, merged, sortedList });
+      } catch (err) {
+        console.error("Error en send_question:", err.message);
+        socket.emit("error", { message: "Error al enviar la pregunta" });
       }
-
-      // Crear pregunta en BD
-      let question = await Question.create({
-        classId,
-        text: text.trim(),
-        category,
-        authorSession: socket.data.sessionId || socket.id,
-      });
-
-      // Funcionalidad 8: detecta y fusiona redundantes
-      const { merged, original } = await mergeIfRedundant(question);
-
-      if (merged && original) {
-        original.priority = calculateScore(original.mergeCount, original.category);
-        await original.save();
-        question = original;
-      } else {
-        question.priority = calculateScore(question.mergeCount, question.category);
-        await question.save();
-      }
-
-      // Funcionalidad 9: obtiene lista ordenada y la emite al profesor
-      const pending = await Question.find({ classId, status: "pendiente", sentOutOfClass: false });
-      const sortedList = sortByPriority(pending);
-
-      // Emite a toda la sala: nueva pregunta o actualización de prioridad
-      io.to(classId).emit("question_update", { question, merged, sortedList });
     });
 
     // ─── Funcionalidad 10: CAMBIAR ESTADO DE PREGUNTA ─────────────────────────
     // Evento: update_question_status
     // Payload: { questionId, status, classId }
     socket.on("update_question_status", async ({ questionId, status, classId }) => {
-      if (socket.data.role !== "profesor") return; // Solo el profesor puede
+      try {
+        if (socket.data.role !== "profesor") return;
 
-      const allowed = ["respondida", "pospuesta", "pendiente"];
-      if (!allowed.includes(status)) return;
+        const allowed = ["respondida", "pospuesta", "pendiente"];
+        if (!allowed.includes(status)) return;
 
-      const question = await Question.findByIdAndUpdate(questionId, { status }, { new: true });
-      if (!question) return;
+        const question = await Question.findByIdAndUpdate(questionId, { status }, { new: true });
+        if (!question) return;
 
-      const pending = await Question.find({ classId, status: "pendiente", sentOutOfClass: false });
-      const sortedList = sortByPriority(pending);
+        const pending = await Question.find({ classId, status: "pendiente", sentOutOfClass: false });
+        const sortedList = sortByPriority(pending);
 
-      // Notifica a toda la sala el cambio de estado
-      io.to(classId).emit("question_update", { question, sortedList });
+        io.to(classId).emit("question_update", { question, sortedList });
+      } catch (err) {
+        console.error("Error en update_question_status:", err.message);
+        socket.emit("error", { message: "Error al actualizar estado" });
+      }
     });
 
     // ─── Funcionalidad 13: EXPULSAR ALUMNO ────────────────────────────────────
     // Evento: kick_user
-    // Payload: { targetSocketId, classId }
-    socket.on("kick_user", ({ targetSocketId, classId }) => {
+    // Payload: { targetSessionId, classId }
+    socket.on("kick_user", ({ targetSessionId, classId }) => {
       if (socket.data.role !== "profesor") return;
 
-      const targetSocket = io.sockets.sockets.get(targetSocketId);
+      const targetSocket = [...io.sockets.sockets.values()].find(
+        (s) => s.data.sessionId === targetSessionId
+      );
+
       if (targetSocket) {
         targetSocket.emit("kicked", { message: "Fuiste expulsado de la clase por el profesor" });
         targetSocket.leave(classId);

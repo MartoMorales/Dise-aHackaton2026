@@ -6,31 +6,23 @@
 // Analiza el mail del usuario y devuelve "alumno" si termina en
 // @est.ort.edu.ar, o "profesor" si termina en @ort.edu.ar.
 // No usa ninguna libreria externa, es logica de string nativa de JS.
+// services/roleValidator.js — Funcionalidad 2
+// Determina el rol del usuario según el dominio de su email institucional
 
-const DOMINIO_ALUMNO = "@est.ort.edu.ar";
-const DOMINIO_PROFESOR = "@ort.edu.ar";
+const STUDENT_DOMAIN = "@est.ort.edu.ar";
+const PROFESSOR_DOMAIN = "@ort.edu.ar";
 
 /**
- * Calcula el rol de un usuario en base al dominio de su mail institucional.
- * @param {string} mail - mail completo del usuario (ej: "juan@est.ort.edu.ar")
- * @returns {"alumno" | "profesor"} rol calculado
- * @throws {Error} si el mail no pertenece a ningun dominio reconocido
+ * Devuelve "alumno", "profesor" o null si el dominio no es válido.
+ * @param {string} email
+ * @returns {"alumno" | "profesor" | null}
  */
-function calcularRolPorMail(mail) {
-  const mailNormalizado = mail.trim().toLowerCase();
-
-  // Importante: hay que chequear primero el dominio de alumno porque
-  // "@est.ort.edu.ar" tambien termina en "ort.edu.ar". Si se chequeara
-  // primero el de profesor, todos los alumnos quedarian mal clasificados.
-  if (mailNormalizado.endsWith(DOMINIO_ALUMNO)) {
-    return "alumno";
-  }
-
-  if (mailNormalizado.endsWith(DOMINIO_PROFESOR)) {
-    return "profesor";
-  }
-
-  throw new Error("El mail no pertenece a un dominio institucional valido.");
+function getRoleFromEmail(email) {
+  if (!email || typeof email !== "string") return null;
+  const lower = email.toLowerCase();
+  if (lower.endsWith(STUDENT_DOMAIN)) return "alumno";
+  if (lower.endsWith(PROFESSOR_DOMAIN)) return "profesor";
+  return null;
 }
 
-module.exports = { calcularRolPorMail };
+module.exports = { getRoleFromEmail };

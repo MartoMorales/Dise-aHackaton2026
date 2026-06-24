@@ -10,43 +10,33 @@
 // estos documentos se cargan de antemano en la base, por ejemplo con un
 // script de seed. Ver seed.js para un ejemplo de como crear usuarios.
 
+// models/User.js — Funcionalidad 1 y 2
+// Define el esquema del usuario con rol automático según dominio de mail
+
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
-    nombre: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    usuario: {
-      // nombre de usuario con el que se loguea (puede ser distinto del mail)
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    mail: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
-    passwordHash: {
-      // nunca se guarda la contraseña en texto plano, solo su hash (bcrypt)
-      type: String,
-      required: true,
-    },
-    rol: {
-      // se calcula automaticamente segun el dominio del mail al crear
-      // el usuario (Funcionalidad 2). No lo elige el usuario.
-      type: String,
-      enum: ["alumno", "profesor"],
-      required: true,
-    },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    // Funcionalidad 2: el rol se asigna al crear el usuario
+    role: { type: String, enum: ["alumno", "profesor"], required: true },
+    name: { type: String, default: "" },
   },
   { timestamps: true }
 );
+
+// Hash de contraseña antes de guardar (Funcionalidad 1)
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+// Método para comparar contraseña en login (Funcionalidad 1)
+userSchema.methods.comparePassword = function (plain) {
+  return bcrypt.compare(plain, this.password);
+};
 
 module.exports = mongoose.model("User", userSchema);

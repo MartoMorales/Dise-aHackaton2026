@@ -1,26 +1,9 @@
-<!-- front/alumno/general-alumno.html
-  PLACEHOLDER TEMPORAL - se reemplaza por completo en la Tanda 3
-  (Modulo de Creacion de Clases). Sirve solo para confirmar que el
-  login redirige correctamente segun el rol "alumno".
--->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Pantalla general - Alumno (placeholder)</title>
-  <link rel="stylesheet" href="../css/estilos.css" />
+  <meta charset="UTF-8"/>
+  <meta http-equiv="refresh" content="0; url=general/index.html"/>
+  <title>Redirigiendo…</title>
 </head>
-<body>
-  <div class="contenedor">
-    <h1>Bienvenido, alumno</h1>
-    <p id="nombreUsuario"></p>
-    <p><em>Esta pantalla se completa en la Tanda 3 (Creacion de Clases).</em></p>
-    <button onclick="cerrarSesion()">Cerrar sesion</button>
-  </div>
-  <script src="../js/api.js"></script>
-  <script>
-    const u = obtenerUsuario();
-    document.getElementById("nombreUsuario").textContent = u ? `Hola, ${u.nombre}` : "";
-  </script>
-</body>
+<body><script>window.location.replace('general/index.html');</script></body>
 </html>

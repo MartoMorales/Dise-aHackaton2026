@@ -1,11 +1,260 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis clases — Anónimas ORT</title>
+  <link rel="stylesheet" href="../../css/estilos.css" />
+  <style>
+    body { min-height: 100vh; background: var(--bg); }
+
+    /* ── Layout ── */
+    .page-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+    }
+
+    /* ── Header página ── */
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .page-header h1 { font-size: 1.4rem; }
+    .page-header p { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+    /* ── Barra de código ── */
+    .join-bar {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 36px;
+      box-shadow: var(--shadow-sm);
+    }
+    .join-bar .join-label {
+      font-size: 14px; font-weight: 600; flex-shrink: 0;
+      color: var(--text);
+    }
+    .join-bar input {
+      flex: 1;
+      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      padding: 9px 14px;
+      font-family: inherit; font-size: 15px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text); outline: none;
+      transition: border-color .15s;
+    }
+    .join-bar input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-100); }
+    .join-bar input::placeholder { font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+    /* ── Sección de clases ── */
+    .section-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      margin-bottom: 16px;
+    }
+
+    .classes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── Card de clase ── */
+    .class-card {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      cursor: pointer;
+      transition: all .18s ease;
+      text-decoration: none;
+      display: block;
+      position: relative;
+      overflow: hidden;
+    }
+    .class-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--card-color, var(--blue));
+    }
+    .class-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+      border-color: var(--blue-100);
+    }
+    .class-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .class-card-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      background: var(--blue-50);
+    }
+    .class-card-status {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .status-dot.activa { background: #10B981; }
+    .status-dot.inactiva { background: var(--text-muted); }
+
+    .class-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .class-card .class-subject {
+      font-size: 13px; color: var(--text-muted); margin-bottom: 16px;
+    }
+    .class-meta {
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .class-meta-row {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .class-meta-row .icon { font-size: 14px; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center; padding: 60px 24px;
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { margin-bottom: 8px; }
+    .empty-state p { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Navbar usuario ── */
+    .user-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--blue-50); border: 1px solid var(--blue-100);
+      border-radius: 24px; padding: 6px 14px 6px 8px;
+      font-size: 13px; font-weight: 600; color: var(--blue);
+    }
+    .user-chip .avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--blue); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+
+    /* ── Modal unirse ── */
+    #modal-join .modal { max-width: 420px; }
+    .modal-join-info {
+      background: var(--blue-50); border-radius: var(--radius-md);
+      padding: 14px; margin-top: 16px;
+      font-size: 14px;
+    }
+    .modal-join-info .mji-row {
+      display: flex; gap: 8px; margin-bottom: 6px; align-items: center;
+    }
+    .modal-join-info .mji-row:last-child { margin-bottom: 0; }
+    .mji-label { font-weight: 600; min-width: 80px; color: var(--text); font-size: 13px; }
+    .mji-val   { color: var(--text-muted); font-size: 13px; }
+
+    /* Skeleton loader */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: var(--radius-md);
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .sk-card { height: 160px; border-radius: var(--radius-lg); }
+
+    @media (max-width: 640px) {
+      .join-bar { flex-direction: column; align-items: stretch; }
+      .classes-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Colores accent por índice */
+    .accent-0 { --card-color: #2563EB; }
+    .accent-1 { --card-color: #7C3AED; }
+    .accent-2 { --card-color: #059669; }
+    .accent-3 { --card-color: #D97706; }
+    .accent-4 { --card-color: #DC2626; }
+    .accent-5 { --card-color: #0891B2; }
+  </style>
 </head>
 <body>
-    
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="../../index.html" class="navbar-brand">
+      <div class="logo-icon">💬</div>
+      Anónimas
+    </a>
+    <div class="navbar-actions">
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar">?</div>
+        <span id="userName">Cargando…</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarSesion()">Salir</button>
+    </div>
+  </nav>
+
+  <!-- Contenido -->
+  <div class="page-wrap">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <h1>Mis clases</h1>
+        <p>Seleccioná una clase para ver las preguntas en tiempo real</p>
+      </div>
+    </div>
+
+    <!-- Barra unirse con código -->
+    <div class="join-bar">
+      <span class="join-label">🔑 Unirse con código</span>
+      <input type="text" id="joinCodeInput" placeholder="Ingresá el código (ej: A1B2C3)" maxlength="8" />
+      <button class="btn btn-primary" id="btnJoin">Unirse</button>
+    </div>
+
+    <!-- Lista de clases activas -->
+    <div class="section-title">🟢 Clases activas ahora</div>
+    <div class="classes-grid" id="activeGrid">
+      <div class="skeleton sk-card"></div>
+      <div class="skeleton sk-card"></div>
+    </div>
+
+    <!-- Todas mis clases -->
+    <div style="margin-top:36px">
+      <div class="section-title">📚 Todas mis clases</div>
+      <div class="classes-grid" id="allGrid">
+        <div class="skeleton sk-card"></div>
+        <div class="skeleton sk-card"></div>
+        <div class="skeleton sk-card"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmación unirse -->
+  <div class="modal-overlay" id="modal-join">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Unirse a la clase</h2>
+        <button class="modal-close" onclick="cerrarModal('modal-join')">✕</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:14px;">Encontramos esta clase activa:</p>
+      <div class="modal-join-info" id="joinClassInfo">
+        <div class="mji-row"><span class="mji-label">Materia</span><span class="mji-val" id="mji-subject">—</span></div>
+        <div class="mji-row"><span class="mji-label">Curso</span><span class="mji-val" id="mji-course">—</span></div>
+        <div class="mji-row"><span class="mji-label">Código</span><span class="mji-val" id="mji-code">—</span></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:24px">
+        <button class="btn btn-ghost" style="flex:1" onclick="cerrarModal('modal-join')">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2" id="btnConfirmJoin">Entrar a la clase →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../js/api.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

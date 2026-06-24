@@ -1,32 +1,243 @@
-<!-- front/login/login.html
-
-  Pantalla de log in (Funcionalidad 1).
-  Input de usuario, input de contraseña, boton "iniciar" que redirige
-  segun el rol devuelto por el backend.
--->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Iniciar sesion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar sesión — Anónimas ORT</title>
   <link rel="stylesheet" href="../css/estilos.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* ── Panel izquierdo (decorativo) ── */
+    .login-aside {
+      background: linear-gradient(145deg, var(--blue) 0%, #1e40af 60%, #1e3a8a 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-aside::before {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: rgba(255,255,255,.06);
+      border-radius: 50%;
+      top: -100px; right: -100px;
+    }
+    .login-aside::after {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      background: rgba(255,255,255,.04);
+      border-radius: 50%;
+      bottom: -80px; left: -80px;
+    }
+    .aside-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 18px; font-weight: 800; color: white;
+      text-decoration: none;
+    }
+    .aside-logo .logo-icon {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,.2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .aside-content {
+      position: relative; z-index: 1;
+    }
+    .aside-content h2 {
+      font-size: 2rem; font-weight: 800;
+      color: white; line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .aside-content p {
+      color: rgba(255,255,255,.7);
+      font-size: 15px; line-height: 1.6;
+    }
+    .aside-features {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .aside-feature {
+      display: flex; align-items: center; gap: 12px;
+      color: rgba(255,255,255,.85); font-size: 14px;
+    }
+    .aside-feature .dot {
+      width: 8px; height: 8px;
+      background: var(--blue-light);
+      border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── Panel derecho (form) ── */
+    .login-main {
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 40px;
+      background: var(--bg);
+    }
+    .login-box {
+      width: 100%; max-width: 400px;
+    }
+    .login-header {
+      margin-bottom: 40px;
+    }
+    .login-header h1 {
+      font-size: 1.6rem; margin-bottom: 8px;
+    }
+    .login-header p {
+      color: var(--text-muted); font-size: 14px;
+    }
+
+    .login-form .input-group { margin-bottom: 20px; }
+    .login-form label {
+      display: block; font-size: 13px; font-weight: 600;
+      margin-bottom: 6px; color: var(--text);
+    }
+    .login-form .input-wrap { position: relative; }
+    .login-form .input-wrap .input-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 16px; pointer-events: none;
+    }
+    .login-form input {
+      width: 100%; padding: 11px 14px 11px 40px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      font-family: inherit; font-size: 15px; color: var(--text);
+      background: white; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .login-form input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-100);
+    }
+    .login-form input::placeholder { color: var(--text-muted); }
+
+    .btn-login {
+      width: 100%; padding: 13px;
+      background: var(--blue); color: white;
+      border: none; border-radius: var(--radius-md);
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 8px;
+    }
+    .btn-login:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .btn-login .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: none;
+    }
+    .btn-login.loading .spinner { display: block; }
+    .btn-login.loading .btn-label { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert-error {
+      background: #FEE2E2; color: #DC2626;
+      border: 1px solid #FECACA;
+      padding: 12px 14px; border-radius: var(--radius-md);
+      font-size: 14px; margin-bottom: 20px;
+      display: none;
+    }
+
+    .login-footer {
+      text-align: center; margin-top: 32px;
+      color: var(--text-muted); font-size: 13px;
+    }
+    .login-footer a { color: var(--blue); text-decoration: none; }
+
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .login-aside { display: none; }
+      .login-main { padding: 32px 24px; align-items: flex-start; padding-top: 60px; }
+    }
+  </style>
 </head>
 <body>
-  <div class="contenedor">
-    <h1>Iniciar sesion</h1>
 
-    <div id="error" class="error" style="display: none;"></div>
+  <!-- Panel izquierdo -->
+  <aside class="login-aside">
+    <a href="../index.html" class="aside-logo">
+      <div class="logo-icon">💬</div>
+      Anónimas
+    </a>
 
-    <form id="formLogin">
-      <label for="usuario">Ingresa tu usuario</label>
-      <input type="text" id="usuario" name="usuario" required />
+    <div class="aside-content">
+      <h2>Tu pregunta<br/>merece una<br/>respuesta.</h2>
+      <p>La plataforma de preguntas anónimas en tiempo real diseñada para el aula ORT.</p>
+    </div>
 
-      <label for="password">Ingresa tu contraseña</label>
-      <input type="password" id="password" name="password" required />
+    <div class="aside-features">
+      <div class="aside-feature"><div class="dot"></div>Preguntas anónimas en tiempo real</div>
+      <div class="aside-feature"><div class="dot"></div>Prioridad automática por redundancia</div>
+      <div class="aside-feature"><div class="dot"></div>5 categorías con colores únicos</div>
+      <div class="aside-feature"><div class="dot"></div>Preguntas fuera de clase para la próxima</div>
+    </div>
+  </aside>
 
-      <button type="submit">Iniciar</button>
-    </form>
-  </div>
+  <!-- Panel derecho -->
+  <main class="login-main">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>Iniciar sesión</h1>
+        <p>Ingresá con tu cuenta institucional ORT</p>
+      </div>
+
+      <div id="error-msg" class="alert-error"></div>
+
+      <form class="login-form" id="formLogin" novalidate>
+        <div class="input-group">
+          <label for="usuario">Usuario / Mail ORT</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input
+              type="text"
+              id="usuario"
+              name="usuario"
+              placeholder="nombre@ort.edu.ar"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="password">Contraseña</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Tu contraseña"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="btnLogin">
+          <div class="spinner"></div>
+          <span class="btn-label">Ingresar →</span>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p>Las cuentas son otorgadas por el colegio.<br/>
+        ¿Problemas? Contactá a <a href="mailto:soporte@ort.edu.ar">soporte@ort.edu.ar</a></p>
+      </div>
+    </div>
+  </main>
 
   <script src="../js/api.js"></script>
   <script src="login.js"></script>

@@ -6,43 +6,39 @@
 // Tambien es la base de la sesion que usan otras funcionalidades para
 // saber "quien esta haciendo esta accion" (ej: Funcionalidad 3 toma el
 // ID del profesor desde aca, Funcionalidad 7 toma el autor de la pregunta).
+// middlewares/auth.js — Funcionalidad 1
+// Verifica el JWT en el header Authorization y adjunta el usuario al request
 
-const { verificarToken } = require("../utils/cryptoHelper");
+const jwt = require("jsonwebtoken");
 
 /**
- * Middleware que exige un token valido en el header Authorization.
- * Si es valido, agrega req.usuarioSesion = { id, rol } y deja pasar.
- * Formato esperado del header: "Bearer <token>"
+ * Middleware que protege rutas autenticadas.
+ * Espera: Authorization: Bearer <token>
  */
-function requireAuth(req, res, next) {
+function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
-
   if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token no provisto." });
+    return res.status(401).json({ message: "Token no proporcionado" });
   }
 
   const token = header.split(" ")[1];
-
   try {
-    const payload = verificarToken(token);
-    req.usuarioSesion = payload; // { id, rol }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { id, email, role }
     next();
-  } catch (error) {
-    return res.status(401).json({ error: "Token invalido o expirado." });
+  } catch {
+    return res.status(401).json({ message: "Token inválido o expirado" });
   }
 }
 
 /**
- * Middleware adicional para rutas exclusivas de profesores.
- * Debe usarse SIEMPRE despues de requireAuth.
+ * Middleware que verifica que el usuario tenga rol de profesor.
  */
-function requireProfesor(req, res, next) {
-  if (req.usuarioSesion.rol !== "profesor") {
-    return res
-      .status(403)
-      .json({ error: "Esta accion es exclusiva de profesores." });
+function requireProfessor(req, res, next) {
+  if (req.user?.role !== "profesor") {
+    return res.status(403).json({ message: "Acceso solo para profesores" });
   }
   next();
 }
 
-module.exports = { requireAuth, requireProfesor };
+module.exports = { authMiddleware, requireProfessor };

@@ -1,0 +1,41 @@
+<!-- front/index.html
+
+  Pantalla de inicio. Solo presentacion, sin logica de negocio:
+  frase, logo, imagen ilustrativa y boton para ir al login.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Preguntas Anonimas</title>
+  <link rel="stylesheet" href="css/estilos.css" />
+  <style>
+    .inicio {
+      text-align: center;
+      max-width: 600px;
+    }
+    .inicio img {
+      width: 100%;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .frase {
+      font-size: 20px;
+      font-style: italic;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor inicio">
+    <h1>Preguntas Anonimas</h1>
+    <p class="frase">"La pregunta que no haces hoy es la duda que te queda para siempre."</p>
+
+    <img src="assets/alumnos-aprendiendo.jpg" alt="Alumnos aprendiendo en clase" />
+
+    <button onclick="window.location.href='login/login.html'">
+      Iniciar sesion
+    </button>
+  </div>
+</body>
+</html>

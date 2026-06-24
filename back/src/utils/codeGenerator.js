@@ -4,6 +4,9 @@
 const crypto = require("crypto");
 const Class = require("../models/Class");
 
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const CODE_LENGTH = 6;
+
 /**
  * Genera un código de 6 caracteres alfanumérico en mayúsculas.
  * Verifica contra la BD que no exista uno igual (sin colisiones).
@@ -14,8 +17,11 @@ async function generateUniqueCode() {
   let exists = true;
 
   while (exists) {
-    // Genera 3 bytes aleatorios → 6 chars hex en mayúsculas
-    code = crypto.randomBytes(3).toString("hex").toUpperCase();
+    const bytes = crypto.randomBytes(CODE_LENGTH);
+    code = "";
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      code += ALPHABET[bytes[i] % ALPHABET.length];
+    }
     exists = await Class.findOne({ code });
   }
 

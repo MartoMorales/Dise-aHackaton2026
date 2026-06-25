@@ -3,282 +3,141 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de clase — Profesor</title>
+  <title>Sala — Hide &amp; Speak</title>
   <link rel="stylesheet" href="../../css/estilos.css" />
-  <script src="/socket.io/socket.io.js"></script>
   <style>
-    body { min-height: 100vh; background: var(--bg); }
+    :root {
+      --head:    #87B1FF;
+      --gold:    #FFC145;
+      --gold-d:  #f0ad2e;
+      --orange:  #F75C03;
+      --bar:     #054A52;   /* barra de la clase */
+      --teal:    #458087;   /* fondo principal */
+      --msg:     #D9EFFF;   /* tarjeta de mensaje */
+    }
+    body { min-height: 100vh; background: var(--teal); }
 
-    /* ── Layout dos columnas ── */
-    .layout {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      height: calc(100vh - 60px);
-    }
-
-    /* ── Sidebar ── */
-    .sidebar {
-      background: white;
-      border-right: 1.5px solid var(--border);
-      display: flex; flex-direction: column;
-      overflow: hidden;
-    }
-    .sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-    .sidebar-header h2 { font-size: 15px; margin-bottom: 4px; }
-    .sidebar-header p  { color: var(--text-muted); font-size: 12px; }
-    .sidebar-code {
-      background: var(--blue-50);
-      border: 1px solid var(--blue-100);
-      border-radius: var(--radius-md);
-      padding: 8px 12px;
-      margin-top: 10px;
+    /* ── Header (igual a las otras pantallas) ── */
+    .pc-header {
       display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px;
+      background: var(--head);
     }
-    .sidebar-code span { font-size: 18px; font-weight: 800; color: var(--blue); letter-spacing: .1em; }
-    .sidebar-code small { font-size: 11px; color: var(--text-muted); }
+    .pc-brand {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 26px; font-weight: 600; color: #000;
+      text-decoration: none;
+    }
+    .pc-brand img { height: 54px; width: auto; object-fit: contain; }
+    .pc-brand .accent { color: var(--orange); }
+    .pc-user {
+      background: #FFC145; color: #1e2230;
+      border: none; border-radius: 999px;
+      padding: 14px 38px; font-family: inherit;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .pc-user:hover { background: var(--gold-d); transform: translateY(-1px); }
+    .pc-actions { display: flex; align-items: center; gap: 14px; }
+    .pc-back {
+      background: #D9EFFF; color: #1e2230;
+      border: none; border-radius: 999px;
+      padding: 14px 26px; font-family: inherit;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .pc-back:hover { background: #fff; transform: translateY(-1px); }
 
-    .sidebar-stats {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-    .sstat {
-      background: var(--bg); border-radius: var(--radius-md);
-      padding: 10px 12px; text-align: center;
-    }
-    .sstat .val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
-    .sstat .lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-
-    .sidebar-nav {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-    .sidebar-nav-btn {
-      width: 100%; background: none; border: none;
-      text-align: left; padding: 8px 10px;
-      border-radius: var(--radius-md);
-      font-family: inherit; font-size: 13px; font-weight: 600;
-      color: var(--text-muted); cursor: pointer;
-      transition: all .15s; display: flex; align-items: center; gap: 8px;
-    }
-    .sidebar-nav-btn:hover { background: var(--bg); color: var(--text); }
-    .sidebar-nav-btn.active { background: var(--blue-50); color: var(--blue); }
-    .sidebar-nav-btn .count {
-      margin-left: auto; background: var(--blue);
-      color: white; border-radius: 20px;
-      padding: 1px 7px; font-size: 10px; font-weight: 700;
-    }
-
-    .sidebar-meta {
-      flex: 1; padding: 14px 20px; overflow-y: auto;
-    }
-    .meta-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
-    .meta-row .lbl { color: var(--text-muted); min-width: 70px; }
-    .meta-row .val { font-weight: 600; }
-
-    .sidebar-actions { padding: 14px 20px; border-top: 1px solid var(--border); }
-
-    /* ── Main panel ── */
-    .main-panel { display: flex; flex-direction: column; overflow: hidden; }
-
-    /* Tabs */
-    .tabs-bar {
-      background: white; border-bottom: 1.5px solid var(--border);
-      padding: 0 24px;
-      display: flex; align-items: center; gap: 4px;
-    }
-    .tab-btn {
-      background: none; border: none; border-bottom: 3px solid transparent;
-      padding: 14px 16px; font-family: inherit; font-size: 14px;
-      font-weight: 600; color: var(--text-muted);
-      cursor: pointer; transition: all .15s;
-    }
-    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
-    .tab-count {
-      display: inline-flex; align-items: center;
-      background: var(--blue-100); color: var(--blue);
-      border-radius: 20px; padding: 1px 7px;
-      font-size: 11px; font-weight: 700; margin-left: 6px;
+    /* ── Barra de la clase ── */
+    .cls-bar {
+      background: var(--bar); color: #fff;
+      padding: 26px 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 30px; font-weight: 700;
     }
 
-    /* Panel de preguntas */
-    .questions-panel {
-      flex: 1; overflow-y: auto; padding: 20px 24px;
-      display: flex; flex-direction: column; gap: 12px;
-    }
-    .questions-panel.hidden { display: none; }
-
-    /* Card de pregunta */
-    .q-card {
-      background: white;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg);
-      border-left-width: 4px;
-      padding: 16px 18px;
-      transition: all .15s;
-    }
-    .q-card:hover { box-shadow: var(--shadow-md); }
-    .q-card.respondida { opacity: .55; }
-    .q-card.pospuesta  { border-style: dashed; }
-
-    .q-card-top {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-    }
-    .q-author { font-size: 12px; font-weight: 700; color: var(--text-muted); }
-    .q-time   { font-size: 11px; color: var(--text-muted); margin-left: auto; }
-
-    .priority-flame {
-      display: flex; align-items: center; gap: 4px;
-      background: #FEF3C7; color: #D97706;
-      border-radius: 20px; padding: 2px 8px;
-      font-size: 11px; font-weight: 700;
+    /* ── Lista de mensajes ── */
+    .cls-main {
+      padding: 28px 64px 80px;
+      display: flex; flex-direction: column; gap: 26px;
     }
 
-    .q-text { font-size: 14px; line-height: 1.5; margin-bottom: 12px; }
-
-    .q-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .q-btn {
-      background: none; border: 1.5px solid var(--border);
-      border-radius: var(--radius-md); padding: 6px 12px;
-      font-family: inherit; font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all .15s;
-      display: flex; align-items: center; gap: 5px;
+    .msg-card {
+      background: var(--msg);
+      border-radius: 20px;
+      padding: 22px 26px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.14);
     }
-    .q-btn:hover { transform: translateY(-1px); }
-    .q-btn.tick     { border-color: #A7F3D0; color: #059669; }
-    .q-btn.tick:hover { background: #D1FAE5; }
-    .q-btn.cross    { border-color: #FECACA; color: #DC2626; }
-    .q-btn.cross:hover { background: #FEE2E2; }
-    .q-btn.postpone { border-color: #FDE68A; color: #D97706; }
-    .q-btn.postpone:hover { background: #FEF3C7; }
-    .q-btn.kick     { border-color: #FECACA; color: #DC2626; }
-    .q-btn.kick:hover { background: #FEE2E2; }
-
-    /* Empty */
-    .q-empty {
-      text-align: center; padding: 60px 20px;
-      color: var(--text-muted); font-size: 14px;
+    .msg-card h3 {
+      color: #0b1f33; font-size: 21px; font-weight: 800; margin: 0 0 14px;
     }
-    .q-empty .icon { font-size: 40px; display: block; margin-bottom: 12px; }
-
-    /* Inbox panel */
-    .inbox-panel {
-      flex: 1; overflow-y: auto; padding: 20px 24px;
-      display: flex; flex-direction: column; gap: 12px;
+    .msg-box {
+      background: #F4FAFF;
+      border-radius: 22px;
+      padding: 15px 24px;
+      font-size: 16px; line-height: 1.4;
+      color: #2a3b4d;
+      white-space: pre-wrap;
+      overflow-wrap: break-word; word-break: break-word;
     }
-    .inbox-panel.hidden { display: none; }
-    .inbox-q {
-      background: white; border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg); border-left: 4px solid var(--cat-duda);
-      padding: 14px 16px;
+    .msg-box.placeholder { color: #8a98ad; }
+
+    .msg-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-top: 18px;
     }
-    .inbox-q .q-text { margin-bottom: 8px; }
-    .inbox-q .q-meta { font-size: 12px; color: var(--text-muted); }
+    .msg-cat {
+      display: inline-block;
+      padding: 7px 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 700; color: #fff;
+    }
 
-    /* Barra conexión */
-    #connBadge { margin-left: auto; }
+    .msg-actions {
+      display: flex; justify-content: flex-end; gap: 12px;
+    }
+    .msg-btn {
+      border: none; border-radius: 8px;
+      padding: 9px 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: filter .15s, transform .15s;
+    }
+    .msg-btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+    .msg-ok  { background: #1AD302; color: #fff; font-size: 20px; font-weight: 800; }
+    .msg-del { background: #DB0000; }
 
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-      .sidebar { height: auto; border-right: none; border-bottom: 1.5px solid var(--border); }
-      .sidebar-meta { display: none; }
+    .cls-empty {
+      color: #eaf3f5; font-size: 16px; text-align: center; padding: 40px 0;
+    }
+
+    @media (max-width: 640px) {
+      .pc-header { padding: 12px 18px; }
+      .cls-bar { padding: 14px 18px; font-size: 16px; flex-direction: column; gap: 4px; align-items: flex-start; }
+      .cls-main { padding: 20px 18px 60px; }
     }
   </style>
 </head>
 <body>
 
-  <nav class="navbar">
-    <a href="../general/index.html" class="navbar-brand">
-      <div class="logo-icon">💬</div>
-      Anónimas
+  <!-- Header -->
+  <header class="pc-header">
+    <a href="../general/index.html" class="pc-brand">
+      <img src="../../img/Solo_logo-removebg-preview.png" alt="Hide & Speak logo" />
+      Hide &amp; <span class="accent">Speak</span>
     </a>
-    <div class="navbar-actions">
-      <div id="connBadge" class="badge badge-muted">Conectando…</div>
-      <button class="btn btn-ghost btn-sm" onclick="window.location.href='../general/index.html'">← Mis clases</button>
-      <button class="btn btn-ghost btn-sm" onclick="cerrarSesion()">Salir</button>
+    <div class="pc-actions">
+      <button class="pc-back" onclick="window.location.href='../general/index.html'">← Mis clases</button>
+      <button class="pc-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
     </div>
-  </nav>
+  </header>
 
-  <div class="layout">
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2 id="sClassName">Cargando…</h2>
-        <p id="sClassSubject">—</p>
-        <div class="sidebar-code">
-          <div>
-            <small>Código de acceso</small><br/>
-            <span id="sCode">——</span>
-          </div>
-          <button class="btn btn-secondary btn-sm" id="btnCopyCode" onclick="copiarCodigo()">Copiar</button>
-        </div>
-      </div>
-
-      <div class="sidebar-stats">
-        <div class="sstat"><div class="val" id="sAlumnos">0</div><div class="lbl">Alumnos</div></div>
-        <div class="sstat"><div class="val" id="sPendientes">0</div><div class="lbl">Pendientes</div></div>
-        <div class="sstat"><div class="val" id="sRespondidas">0</div><div class="lbl">Respondidas</div></div>
-        <div class="sstat"><div class="val" id="sTotales">0</div><div class="lbl">Total</div></div>
-      </div>
-
-      <div class="sidebar-nav">
-        <button class="sidebar-nav-btn active" data-tab="pendientes" onclick="setTab('pendientes')">
-          ⏳ Pendientes <span class="count" id="cntPendientes">0</span>
-        </button>
-        <button class="sidebar-nav-btn" data-tab="respondidas" onclick="setTab('respondidas')">
-          ✅ Respondidas <span class="count" id="cntRespondidas">0</span>
-        </button>
-        <button class="sidebar-nav-btn" data-tab="inbox" onclick="setTab('inbox')">
-          📬 Fuera de clase <span class="count" id="cntInbox">0</span>
-        </button>
-      </div>
-
-      <div class="sidebar-meta">
-        <div class="meta-row"><span class="lbl">Curso</span><span class="val" id="sCourseMeta">—</span></div>
-        <div class="meta-row"><span class="lbl">Horario</span><span class="val" id="sScheduleMeta">—</span></div>
-      </div>
-
-      <div class="sidebar-actions">
-        <button class="btn btn-danger btn-full btn-sm" id="btnClose">Cerrar clase</button>
-      </div>
-    </aside>
-
-    <!-- Panel principal -->
-    <main class="main-panel">
-
-      <div class="tabs-bar">
-        <button class="tab-btn active" data-tab="pendientes" onclick="setTab('pendientes')">
-          En espera <span class="tab-count" id="tabCntP">0</span>
-        </button>
-        <button class="tab-btn" data-tab="respondidas" onclick="setTab('respondidas')">
-          Respondidas <span class="tab-count" id="tabCntR">0</span>
-        </button>
-        <button class="tab-btn" data-tab="inbox" onclick="setTab('inbox')">
-          Inbox <span class="tab-count" id="tabCntI">0</span>
-        </button>
-      </div>
-
-      <!-- Pendientes -->
-      <div class="questions-panel" id="panel-pendientes">
-        <div class="q-empty"><span class="icon">🎉</span>No hay preguntas pendientes todavía.</div>
-      </div>
-
-      <!-- Respondidas -->
-      <div class="questions-panel hidden" id="panel-respondidas">
-        <div class="q-empty"><span class="icon">📭</span>Todavía no respondiste ninguna pregunta.</div>
-      </div>
-
-      <!-- Inbox fuera de clase -->
-      <div class="inbox-panel hidden" id="panel-inbox">
-        <div class="q-empty"><span class="icon">📬</span>No hay preguntas fuera de clase.</div>
-      </div>
-
-    </main>
+  <!-- Barra de la clase -->
+  <div class="cls-bar">
+    <span id="clsName">Clase: —</span>
+    <span id="clsCode">Código: ——</span>
   </div>
+
+  <!-- Lista de mensajes -->
+  <div class="cls-main" id="msgList"></div>
 
   <script src="../../js/api.js"></script>
   <script src="main.js"></script>

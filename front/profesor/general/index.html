@@ -3,205 +3,159 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mis clases — Profesor</title>
+  <title>Tus clases — Hide &amp; Speak</title>
   <link rel="stylesheet" href="../../css/estilos.css" />
   <style>
-    body { min-height: 100vh; background: var(--bg); }
-    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 60px; }
+    :root {
+      --head:   #87B1FF;
+      --gold:   #FFC145;
+      --gold-d: #f0ad2e;
+      --orange: #F75C03;
+      --card:   #365D61;
+      --descbg: #D4E7FF;
+    }
+    body { min-height: 100vh; background: #EEF4F9; }
 
-    .page-header {
+    /* ── Header ── */
+    .pc-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 32px;
+      padding: 20px 48px;
+      background: var(--head);
     }
-    .page-header h1 { font-size: 1.4rem; }
-    .page-header p  { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+    .pc-brand {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 26px; font-weight: 600; color: #000;
+      text-decoration: none;
+    }
+    .pc-brand img { height: 54px; width: auto; object-fit: contain; }
+    .pc-brand .accent { color: var(--orange); }
+    .pc-user {
+      background: #FFC145; color: #1e2230;
+      border: none; border-radius: 999px;
+      padding: 14px 38px; font-family: inherit;
+      font-size: 17px; font-weight: 700; cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .pc-user:hover { background: var(--gold-d); transform: translateY(-1px); }
 
-    /* ── Stats bar ── */
-    .stats-bar {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-      margin-bottom: 32px;
-    }
-    .stat-card {
-      background: white; border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg); padding: 20px 24px;
-      box-shadow: var(--shadow-sm);
-    }
-    .stat-card .stat-val {
-      font-size: 2rem; font-weight: 800; color: var(--blue); line-height: 1;
-    }
-    .stat-card .stat-label { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
-
-    /* ── Grid de clases ── */
-    .section-title {
-      font-size: 13px; font-weight: 700;
-      color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: .06em; margin-bottom: 16px;
-    }
-    .classes-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 18px;
+    /* ── Contenido ── */
+    .pc-wrap { padding: 32px 40px 120px; }
+    .pc-title {
+      font-size: 3.6rem; font-weight: 600; color: #000;
+      margin: 0 0 28px;
     }
 
-    /* ── Card clase ── */
-    .class-card {
-      background: white; border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg); padding: 22px;
-      transition: all .18s; position: relative; overflow: hidden;
+    /* ── Grilla de clases ── */
+    /* Exactamente 3 columnas; el gap entre tarjetas = margen lateral (40px) */
+    /* 3 columnas reales; las tarjetas se reparten por orden de creación
+       (1→col1, 2→col2, 3→col3, 4→col1…) y cada columna apila independiente */
+    .pc-grid {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
     }
-    .class-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0;
-      height: 3px; background: var(--card-color, var(--blue));
+    .pc-col {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 40px;
     }
-    .class-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
-    .class-card-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 14px;
+    /* ── Tarjeta ── */
+    .pc-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.12);
     }
-    .class-card-icon {
-      width: 44px; height: 44px; border-radius: var(--radius-md);
-      background: var(--blue-50);
+    .pc-card h3 {
+      color: #fff; font-size: 40px; font-weight: 400; margin: 0;
+    }
+    .pc-desc {
+      background: var(--descbg);
+      border-radius: 10px;
+      padding: 13px 15px;
+      font-size: 14px; line-height: 1.4;
+      color: #8a98ad;            /* tono "placeholder" */
+      min-height: 46px;          /* alto mínimo; crece hacia abajo si hace falta */
+      white-space: pre-wrap;     /* respeta saltos de línea y envuelve el texto */
+      overflow-wrap: break-word; /* corta palabras largas para no agrandar el ancho */
+      word-break: break-word;
+    }
+    .pc-desc.filled { color: #1e2230; }
+    .pc-card-footer { display: flex; justify-content: flex-end; gap: 12px; }
+    .pc-iniciar {
+      background: var(--gold); color: #1e2230;
+      border: none; border-radius: 8px;
+      padding: 9px 26px; font-family: inherit;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .pc-iniciar:hover { background: var(--gold-d); transform: translateY(-1px); }
+    .pc-eliminar {
+      background: #e5484d; color: #fff;
+      border: none; border-radius: 8px;
+      padding: 9px 16px; font-family: inherit;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .pc-eliminar:hover { background: #c93b40; transform: translateY(-1px); }
+
+    .pc-empty {
+      color: #64748b; font-size: 15px; padding: 24px 0;
+    }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; right: 30px; bottom: 30px;
+      width: 86px; height: 86px; border-radius: 50%;
+      background: var(--orange); color: #fff; border: none;
+      font-size: 48px; line-height: 1; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.28);
+      transition: transform .15s, box-shadow .15s;
     }
-    .class-card-actions { display: flex; gap: 6px; }
-    .class-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-    .class-card .class-subject { color: var(--text-muted); font-size: 13px; margin-bottom: 14px; }
+    .fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 10px 24px rgba(0,0,0,.32); }
 
-    .class-meta { display: flex; flex-direction: column; gap: 5px; }
-    .class-meta-row {
-      display: flex; align-items: center; gap: 7px;
-      font-size: 13px; color: var(--text-muted);
-    }
+    /* ── Modal: form ── */
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-size: 16px; font-weight: 600; color: var(--text); }
 
-    .class-footer {
-      margin-top: 16px; padding-top: 14px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 8px;
-    }
+    /* Modal "Nueva clase" agrandado proporcionalmente */
+    #modal-crear .modal { max-width: 720px; padding: 52px; }
+    #modal-crear .modal-header { margin-bottom: 34px; }
+    #modal-crear .modal-header h2 { font-size: 2.1rem; }
+    #modal-crear .form-group label { font-size: 18px; }
+    #modal-crear .input { font-size: 19px; padding: 15px 18px; }
+    #modal-crear .btn { font-size: 18px; padding: 16px 28px; }
 
-    /* ── Status badge en card ── */
-    .status-pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 700;
-    }
-    .status-pill.activa   { background: #D1FAE5; color: #059669; }
-    .status-pill.inactiva { background: var(--border); color: var(--text-muted); }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-    /* ── Empty ── */
-    .empty-state {
-      grid-column: 1/-1; text-align: center; padding: 60px 24px;
-    }
-    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
-    .empty-state h3 { margin-bottom: 8px; }
-    .empty-state p  { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
-
-    /* ── Modal crear clase ── */
-    #modal-crear .modal { max-width: 520px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .form-grid .full { grid-column: 1/-1; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 13px; font-weight: 600; }
-    .form-group input, .form-group select {
-      padding: 10px 12px; border: 1.5px solid var(--border);
-      border-radius: var(--radius-md); font-family: inherit;
-      font-size: 14px; color: var(--text); outline: none;
-      background: white; transition: border-color .15s;
-    }
-    .form-group input:focus, .form-group select:focus {
-      border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-100);
-    }
-
-    /* ── Modal código ── */
-    .code-display {
-      background: var(--blue-50); border: 2px dashed var(--blue-100);
-      border-radius: var(--radius-lg); padding: 24px;
-      text-align: center; margin: 20px 0;
-    }
-    .code-big {
-      font-size: 2.5rem; font-weight: 800; color: var(--blue);
-      letter-spacing: .15em; display: block;
-    }
-    .code-display p { color: var(--text-muted); font-size: 13px; margin-top: 8px; }
-
-    /* Skeleton */
-    .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; border-radius:var(--radius-lg); }
-    .sk-card { height: 180px; }
-    @keyframes shimmer { to { background-position:-200% 0; } }
-
-    .user-chip { display:flex;align-items:center;gap:8px;background:var(--blue-50);border:1px solid var(--blue-100);border-radius:24px;padding:6px 14px 6px 8px;font-size:13px;font-weight:600;color:var(--blue); }
-    .user-chip .avatar { width:26px;height:26px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700; }
-
-    .accent-0{--card-color:#2563EB}.accent-1{--card-color:#7C3AED}.accent-2{--card-color:#059669}.accent-3{--card-color:#D97706}.accent-4{--card-color:#DC2626}.accent-5{--card-color:#0891B2}
-
-    @media(max-width:640px){
-      .stats-bar{grid-template-columns:1fr};
-      .classes-grid{grid-template-columns:1fr};
-      .form-grid{grid-template-columns:1fr};
+    @media (max-width: 640px) {
+      .pc-header { padding: 12px 18px; }
+      .pc-wrap { padding: 20px 18px 100px; }
+      .pc-title { font-size: 2rem; }
     }
   </style>
 </head>
 <body>
 
-  <nav class="navbar">
-    <a href="../../index.html" class="navbar-brand">
-      <div class="logo-icon">💬</div>
-      Anónimas
+  <!-- Header -->
+  <header class="pc-header">
+    <a href="../../index.html" class="pc-brand">
+      <img src="../../img/Solo_logo-removebg-preview.png" alt="Hide & Speak logo" />
+      Hide &amp; <span class="accent">Speak</span>
     </a>
-    <div class="navbar-actions">
-      <div class="user-chip">
-        <div class="avatar" id="userAvatar">P</div>
-        <span id="userName">Profe</span>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="cerrarSesion()">Salir</button>
-    </div>
-  </nav>
+    <button class="pc-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
+  </header>
 
-  <div class="page-wrap">
-
-    <div class="page-header">
-      <div>
-        <h1>Mis clases</h1>
-        <p>Iniciá una clase activa para que los alumnos puedan entrar</p>
-      </div>
-      <button class="btn btn-primary" id="btnCrear">+ Nueva clase</button>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-bar">
-      <div class="stat-card">
-        <div class="stat-val" id="statTotal">—</div>
-        <div class="stat-label">Clases creadas</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statActivas">—</div>
-        <div class="stat-label">Activas ahora</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statAlumnos">—</div>
-        <div class="stat-label">Alumnos totales</div>
-      </div>
-    </div>
-
-    <!-- Clases activas -->
-    <div class="section-title">🟢 Activas ahora</div>
-    <div class="classes-grid" id="activeGrid">
-      <div class="skeleton sk-card"></div>
-    </div>
-
-    <!-- Todas las clases -->
-    <div style="margin-top:36px">
-      <div class="section-title">📚 Todas mis clases</div>
-      <div class="classes-grid" id="allGrid">
-        <div class="skeleton sk-card"></div>
-        <div class="skeleton sk-card"></div>
-      </div>
-    </div>
+  <!-- Contenido -->
+  <div class="pc-wrap">
+    <h1 class="pc-title">Tus clases</h1>
+    <div class="pc-grid" id="classesGrid"></div>
   </div>
 
-  <!-- Modal: crear clase -->
+  <!-- FAB crear clase -->
+  <button class="fab" id="fab" title="Crear nueva clase">+</button>
+
+  <!-- Modal: nueva clase -->
   <div class="modal-overlay" id="modal-crear">
     <div class="modal">
       <div class="modal-header">
@@ -209,52 +163,18 @@
         <button class="modal-close" onclick="cerrarModal('modal-crear')">✕</button>
       </div>
       <div id="crear-error" class="alert alert-error" style="display:none"></div>
-      <div class="form-grid">
-        <div class="form-group full">
-          <label>Nombre de la clase *</label>
-          <input type="text" id="f-name" placeholder="Ej: Matemática 5°A — Bloque 2" />
-        </div>
-        <div class="form-group">
-          <label>Materia *</label>
-          <input type="text" id="f-subject" placeholder="Ej: Matemática" />
-        </div>
-        <div class="form-group">
-          <label>Curso *</label>
-          <input type="text" id="f-course" placeholder="Ej: 5°A" />
-        </div>
-        <div class="form-group">
-          <label>Aula</label>
-          <input type="text" id="f-room" placeholder="Ej: 204" />
-        </div>
-        <div class="form-group">
-          <label>Capacidad máx.</label>
-          <input type="number" id="f-max" placeholder="40" min="1" />
-        </div>
-        <div class="form-group full">
-          <label>Horario</label>
-          <input type="text" id="f-schedule" placeholder="Ej: Lun/Mié 10:00–11:30" />
-        </div>
+      <div class="form-group">
+        <label>Nombre de la clase *</label>
+        <input class="input" type="text" id="f-name" placeholder="Ej: Historia 5to A" />
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label>Descripción</label>
+        <textarea class="input" id="f-desc" placeholder="Descripción de la clase" style="min-height:80px"></textarea>
       </div>
       <div style="display:flex;gap:10px;margin-top:24px">
         <button class="btn btn-ghost" style="flex:1" onclick="cerrarModal('modal-crear')">Cancelar</button>
         <button class="btn btn-primary" style="flex:2" id="btnCrearConfirm">Crear clase</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal: código de la clase -->
-  <div class="modal-overlay" id="modal-codigo">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>Clase iniciada ✓</h2>
-        <button class="modal-close" onclick="cerrarModal('modal-codigo')">✕</button>
-      </div>
-      <p style="color:var(--text-muted);font-size:14px">Compartí este código con tus alumnos para que puedan unirse:</p>
-      <div class="code-display">
-        <span class="code-big" id="codigoDisplay">——</span>
-        <p>Los alumnos lo ingresan en "Unirse con código"</p>
-      </div>
-      <button class="btn btn-primary btn-full" id="btnIrAClase">Ir al panel de la clase →</button>
     </div>
   </div>
 

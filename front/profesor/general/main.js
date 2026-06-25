@@ -1,149 +1,177 @@
 // front/profesor/general/main.js
-// Funcionalidades 3, 4 (profesor): CRUD de clases, iniciar/hostear clase.
+// Pantalla "Tus clases" (profesor). Modo demo: las clases se guardan en
+// localStorage y se renderizan como tarjetas. Al crear una con el botón "+",
+// se agrega una tarjeta nueva en el mismo formato.
 
-const COLORES = ['accent-0','accent-1','accent-2','accent-3','accent-4','accent-5'];
+const STORAGE_KEY = "demo_clases_profesor";
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (!requiereAuth('profesor')) return;
+document.addEventListener("DOMContentLoaded", () => {
+  if (!requiereAuth("profesor")) return;
 
   const u = obtenerUsuario();
-  document.getElementById('userName').textContent = u.nombre || u.email;
-  document.getElementById('userAvatar').textContent = (u.nombre || 'P')[0].toUpperCase();
+  document.getElementById("userName").textContent = u.nombre || u.email;
 
-  cargarClases();
+  render();
 
-  document.getElementById('btnCrear').addEventListener('click', () => abrirModal('modal-crear'));
-  document.getElementById('btnCrearConfirm').addEventListener('click', crearClase);
+  document.getElementById("fab").addEventListener("click", () => abrirModal("modal-crear"));
+  document.getElementById("btnCrearConfirm").addEventListener("click", crearClase);
+
+  // Reacomodar columnas al cambiar el tamaño de la ventana
+  let lastCols = numCols();
+  window.addEventListener("resize", () => {
+    if (numCols() !== lastCols) {
+      lastCols = numCols();
+      render();
+    }
+  });
 });
 
-/* ── Cargar clases ─────────────────────────────────────── */
-async function cargarClases() {
-  try {
-    const res = await apiFetch('/clases');
-    const clases = res.clases || [];
-    const activas  = clases.filter(c => c.status === 'activa');
-    const todas    = clases;
-
-    document.getElementById('statTotal').textContent   = clases.length;
-    document.getElementById('statActivas').textContent  = activas.length;
-    document.getElementById('statAlumnos').textContent  = clases.reduce((s,c) => s + (c.maxStudents || 0), 0);
-
-    renderGrid('activeGrid', activas, true);
-    renderGrid('allGrid',    todas,   true);
-  } catch (err) {
-    renderGrid('activeGrid', [], true);
-    renderGrid('allGrid', [], true);
-    showToast(err.message, 'error');
-  }
+/* ── Cantidad de columnas según ancho ─────────────────── */
+function numCols() {
+  return window.innerWidth <= 640 ? 1 : 3;
 }
 
-function renderGrid(gridId, clases, esProfesor) {
-  const grid = document.getElementById(gridId);
+/* ── Persistencia ─────────────────────────────────────── */
+function getClases() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+function saveClases(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+/* ── Render ───────────────────────────────────────────── */
+function render() {
+  const grid = document.getElementById("classesGrid");
+  const clases = getClases();
+  grid.innerHTML = "";
+
   if (!clases.length) {
-    const esActiva = gridId === 'activeGrid';
-    grid.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">${esActiva ? '✨' : '📭'}</div>
-      <h3>${esActiva ? 'Ninguna clase activa' : 'No tenés clases todavía'}</h3>
-      <p>${esActiva ? 'Iniciá una clase para que los alumnos puedan conectarse.' : 'Creá tu primera clase con el botón de arriba.'}</p>
-      ${!esActiva ? '<button class="btn btn-primary" onclick="abrirModal(\'modal-crear\')">+ Nueva clase</button>' : ''}
-    </div>`;
+    grid.innerHTML =
+      '<p class="pc-empty">Todavía no creaste ninguna clase. Tocá el botón + para agregar una.</p>';
     return;
   }
-  grid.innerHTML = clases.map((cls, i) => cardHTML(cls, i)).join('');
+
+  // Crear N columnas y repartir por orden de creación: i % N
+  const n = numCols();
+  const cols = [];
+  for (let k = 0; k < n; k++) {
+    const col = document.createElement("div");
+    col.className = "pc-col";
+    grid.appendChild(col);
+    cols.push(col);
+  }
+
+  clases.forEach((c, i) => {
+    cols[i % n].insertAdjacentHTML("beforeend", cardHTML(c, i));
+  });
 }
 
-function cardHTML(cls, i) {
-  const activa = cls.status === 'activa';
+function cardHTML(c, i) {
+  const desc = c.descripcion
+    ? `<div class="pc-desc filled">${escapeHtml(c.descripcion)}</div>`
+    : `<div class="pc-desc">Descripción de la clase</div>`;
+
   return `
-    <div class="class-card ${COLORES[i % COLORES.length]}">
-      <div class="class-card-header">
-        <div class="class-card-icon">📚</div>
-        <span class="status-pill ${activa ? 'activa' : 'inactiva'}">
-          <div class="status-dot"></div>
-          ${activa ? 'En curso' : 'Inactiva'}
-        </span>
-      </div>
-      <h3>${cls.name}</h3>
-      <p class="class-subject">${cls.subject || ''}</p>
-      <div class="class-meta">
-        <div class="class-meta-row">🏫 ${cls.course || '—'}</div>
-        ${cls.schedule ? `<div class="class-meta-row">🕐 ${cls.schedule}</div>` : ''}
-        <div class="class-meta-row">👥 Máx. ${cls.maxStudents || '—'} alumnos</div>
-      </div>
-      <div class="class-footer">
-        ${activa
-          ? `<button class="btn btn-primary btn-sm" style="flex:2" onclick="irAClase('${cls._id}','${cls.code}')">Ver clase →</button>
-             <button class="btn btn-danger btn-sm" onclick="cerrarClase('${cls._id}')">Cerrar</button>`
-          : `<button class="btn btn-secondary btn-sm" style="flex:2" onclick="iniciarClase('${cls._id}')">▶ Iniciar clase</button>`
-        }
+    <div class="pc-card">
+      <h3>${escapeHtml(c.nombre)}</h3>
+      ${desc}
+      <div class="pc-card-footer">
+        <button class="pc-iniciar" onclick="iniciarClase(${i})">Iniciar</button>
+        <button class="pc-eliminar" onclick="eliminarClase(${i})">Eliminar</button>
       </div>
     </div>`;
 }
 
-/* ── Crear clase ───────────────────────────────────────── */
-async function crearClase() {
-  const nombre   = document.getElementById('f-name').value.trim();
-  const materia  = document.getElementById('f-subject').value.trim();
-  const curso    = document.getElementById('f-course').value.trim();
-  const aula     = document.getElementById('f-room').value.trim();
-  const maxSt    = parseInt(document.getElementById('f-max').value) || 40;
-  const horario  = document.getElementById('f-schedule').value.trim();
+/* ── Crear clase ──────────────────────────────────────── */
+function crearClase() {
+  const nombre = document.getElementById("f-name").value.trim();
+  const descripcion = document.getElementById("f-desc").value.trim();
+  const errorBox = document.getElementById("crear-error");
 
-  const errEl = document.getElementById('crear-error');
-  if (!nombre || !materia || !curso) {
-    errEl.textContent = 'Completá nombre, materia y curso.';
-    errEl.style.display = 'block'; return;
+  if (!nombre) {
+    errorBox.textContent = "Poné un nombre para la clase.";
+    errorBox.style.display = "block";
+    return;
   }
-  errEl.style.display = 'none';
 
-  const btn = document.getElementById('btnCrearConfirm');
-  btn.disabled = true; btn.textContent = 'Creando…';
+  const clases = getClases();
+  clases.push({ nombre, descripcion });
+  saveClases(clases);
 
-  try {
-    await apiFetch('/clases', {
-      method: 'POST',
-      body: JSON.stringify({ name: nombre, subject: materia, course: curso, room: aula, maxStudents: maxSt, schedule: horario }),
-    });
-    cerrarModal('modal-crear');
-    showToast('Clase creada ✓', 'success');
-    cargarClases();
-  } catch (err) {
-    errEl.textContent = err.message; errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Crear clase';
-  }
+  // Limpiar y cerrar
+  document.getElementById("f-name").value = "";
+  document.getElementById("f-desc").value = "";
+  errorBox.style.display = "none";
+  cerrarModal("modal-crear");
+
+  render();
 }
 
-/* ── Iniciar / hostear ─────────────────────────────────── */
-async function iniciarClase(classId) {
-  try {
-    const res = await apiFetch(`/clases/${classId}/host`, { method: 'POST' });
-    document.getElementById('codigoDisplay').textContent = res.code || res.clase?.code;
-    document.getElementById('btnIrAClase').onclick = () => irAClase(classId, res.code || res.clase?.code);
-    abrirModal('modal-codigo');
-    cargarClases();
-  } catch (err) {
-    showToast(err.message, 'error');
+/* ── Eliminar clase ───────────────────────────────────── */
+function eliminarClase(i) {
+  const clases = getClases();
+  const nombre = clases[i] ? clases[i].nombre : "esta clase";
+  if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
+
+  clases.splice(i, 1);
+  saveClases(clases);
+  render();
+}
+
+/* ── Iniciar clase ────────────────────────────────────── */
+function iniciarClase(i) {
+  const clases = getClases();
+  const c = clases[i];
+  if (!c) return;
+
+  // id estable por clase (para guardar/recuperar sus preguntas)
+  if (!c.id) {
+    c.id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    saveClases(clases);
   }
+
+  // Código SIEMPRE nuevo y aleatorio cada vez que se abre la sala
+  const codigo = generarCodigo();
+
+  sessionStorage.setItem("classId", c.id);
+  sessionStorage.setItem("classCode", codigo);
+  sessionStorage.setItem(
+    "classDemo",
+    JSON.stringify({
+      name: c.nombre,
+      subject: c.descripcion || "",
+      course: "",
+      schedule: "",
+    })
+  );
+
+  window.location.href = "../clase/index.html";
 }
 
-async function cerrarClase(classId) {
-  if (!confirm('¿Cerrar esta clase? Los alumnos serán desconectados.')) return;
-  try {
-    await apiFetch(`/clases/${classId}/close`, { method: 'POST' });
-    showToast('Clase cerrada', 'success');
-    cargarClases();
-  } catch (err) {
-    showToast(err.message, 'error');
+function generarCodigo() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let k = 0; k < 6; k++) {
+    s += chars[Math.floor(Math.random() * chars.length)];
   }
+  return s;
 }
 
-function irAClase(classId, code) {
-  sessionStorage.setItem('classId', classId);
-  sessionStorage.setItem('classCode', code || '');
-  window.location.href = '../clase/index.html';
+/* ── Helpers de modal ─────────────────────────────────── */
+function abrirModal(id) {
+  document.getElementById(id).classList.add("open");
+}
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove("open");
 }
 
-/* ── Helpers modal ─────────────────────────────────────── */
-function abrirModal(id)  { document.getElementById(id).classList.add('open');    }
-function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+/* ── Util ─────────────────────────────────────────────── */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
+  );
+}

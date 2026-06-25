@@ -1,176 +1,288 @@
-/* front/alumno/general/styles.css
-   Pantalla "Unirse a clase" (alumno) — replica el diseño adjuntado.
-   Usa el mismo header que la pantalla de profesor, con prefijo ga- (general alumno)
-   para no chocar con clases del CSS global ni de otras pantallas.
-*/
-
+/* ==========================================================================
+   Variables de Paleta - Identidad "Hide & Speak" (Basado en Foto 2)
+   ========================================================================== */
 :root {
-    --head:    #87B1FF;
-    --gold:    #FFC145;
-    --gold-d:  #f0ad2e;
-    --orange:  #F75C03;
-    --bg:      #EEF4F9;
-    --panel:   #ffffff;
-    --border:  #1e2230;
-    --input-bg:#ffffff;
-  }
-  
-  body {
-    min-height: 100vh;
-    background: var(--bg);
-  }
-  
-  /* ── Header (igual al de profesor) ───────────────────── */
-  .ga-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 48px;
-    background: var(--head);
-  }
-  .ga-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 26px;
-    font-weight: 600;
-    color: #000;
-    text-decoration: none;
-  }
-  .ga-brand img { height: 54px; width: auto; object-fit: contain; }
-  .ga-brand .accent { color: var(--orange); }
-  .ga-user {
-    background: var(--gold);
-    color: #1e2230;
-    border: none;
-    border-radius: 999px;
-    padding: 14px 38px;
-    font-family: inherit;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s, transform .15s;
-  }
-  .ga-user:hover { background: var(--gold-d); transform: translateY(-1px); }
-  
-  /* ── Layout general ──────────────────────────────────── */
-  .ga-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 56px 40px 100px;
-  }
-  
-  .ga-panel {
-    display: flex;
-    align-items: stretch;
-    gap: 48px;
-    max-width: 1100px;
-    width: 100%;
-  }
-  
-  /* ── Columna izquierda ───────────────────────────────── */
-  .ga-left {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 36px;
-  }
-  
-  .ga-title {
-    font-size: 2.1rem;
-    font-weight: 700;
-    color: #000;
-    line-height: 1.25;
-    margin: 0;
-  }
-  .ga-title .accent { color: var(--orange); }
-  
-  /* ── Caja de unirse a clase ──────────────────────────── */
-  .ga-joinbox {
-    border: 2px solid var(--border);
-    border-radius: 18px;
-    padding: 28px 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18px;
-  }
-  
-  .ga-label {
-    font-size: 16px;
-    color: #1e2230;
-    text-align: center;
-  }
-  
-  .ga-input {
-    width: 100%;
-    max-width: 280px;
-    background: var(--input-bg);
-    border: 1px solid #c7d2e0;
-    border-radius: 10px;
-    padding: 14px 16px;
-    font-family: inherit;
-    font-size: 20px;
-    letter-spacing: 6px;
-    text-align: center;
-    text-transform: uppercase;
-    color: #1e2230;
-  }
-  .ga-input:focus {
-    outline: none;
-    border-color: var(--head);
-  }
-  .ga-input.invalid {
-    border-color: #e5484d;
-  }
-  
-  .ga-btn-unirse {
-    background: var(--gold);
-    color: #1e2230;
-    border: none;
-    border-radius: 999px;
-    padding: 14px 56px;
-    font-family: inherit;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s, transform .15s;
-  }
-  .ga-btn-unirse:hover { background: var(--gold-d); transform: translateY(-1px); }
-  .ga-btn-unirse:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  /* ── Columna derecha: imagen ──────────────────────────── */
-  .ga-right {
-    flex: 1;
-    display: flex;
-    align-items: center;
-  }
-  .ga-image {
-    width: 100%;
-    height: 100%;
-    max-height: 360px;
-    object-fit: cover;
-    border-radius: 18px;
-    box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  }
-  
-  /* ── Responsive ───────────────────────────────────────── */
-  @media (max-width: 860px) {
-    .ga-panel {
-      flex-direction: column-reverse;
-      gap: 32px;
-    }
-    .ga-title { font-size: 1.7rem; text-align: center; }
-    .ga-joinbox { padding: 24px 20px; }
-    .ga-image { max-height: 240px; }
-  }
-  
-  @media (max-width: 640px) {
-    .ga-header { padding: 12px 18px; }
-    .ga-wrap { padding: 28px 18px 80px; }
-  }
+  --head-bg: #87B1FF;       /* Azul claro del header */
+  --bg-color: #EEF4F9;      /* Fondo general de la app */
+  --card-bg: #385A5C;      /* Verde azulado oscuro de las tarjetas */
+  --gold: #FFC145;         /* Amarillo/Oro de los botones principales */
+  --gold-hover: #e0aa3e;
+  --orange: #F75C03;       /* Naranja para el realce de 'Speak' */
+  --text-light: #ffffff;
+  --text-dark: #1e2230;
+  --border-radius-card: 16px;
+  --transition: all 0.2s ease;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ==========================================================================
+   Header Estilo Profesor
+   ========================================================================== */
+.ga-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: var(--head-bg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.ga-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #000000;
+  text-decoration: none;
+}
+
+.ga-brand img {
+  height: 42px;
+  width: auto;
+}
+
+.ga-brand .accent {
+  color: var(--orange);
+}
+
+.ga-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Mantenemos el avatar por si la lógica JS altera su contenido */
+.ga-avatar {
+  width: 36px;
+  height: 36px;
+  background-color: var(--card-bg);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.ga-user {
+  background-color: var(--gold);
+  color: var(--text-dark);
+  border: none;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.ga-user:hover {
+  background-color: var(--gold-hover);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Barra de Código (Join Bar)
+   ========================================================================== */
+.join-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.ga-input {
+  flex: 1;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border: 1px solid #c7d2e0;
+  border-radius: 8px;
+  font-size: 18px;
+  outline: none;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 4px;
+  transition: var(--transition);
+}
+
+.ga-input:focus {
+  border-color: var(--card-bg);
+  box-shadow: 0 0 0 3px rgba(56, 90, 92, 0.15);
+}
+
+/* Botón Unirse adaptado a la estética dorada de la imagen 2 */
+.ga-btn-unirse {
+  background-color: var(--gold);
+  color: var(--text-dark);
+  border: none;
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.ga-btn-unirse:hover {
+  background-color: var(--gold-hover);
+}
+
+/* ==========================================================================
+   Contenedor y Títulos
+   ========================================================================== */
+.ga-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 60px 20px;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   Grilla Dinámica y Estilos de Tarjeta (Réplica Exacta Foto 2)
+   ========================================================================== */
+.class-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* Estilo para los divs inyectados dinámicamente por main.js */
+.class-grid > div {
+  background-color: var(--card-bg);
+  color: var(--text-light);
+  border-radius: var(--border-radius-card);
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+/* Ajustes de textos internos simulando los campos del profesor */
+.class-grid > div h3, 
+.class-grid > div strong,
+.class-grid > div .class-title {
+  color: var(--text-light);
+  font-size: 20px;
+  margin: 0;
+}
+
+/* Zona gris/clara interna de descripción si existiera */
+.class-grid > div p,
+.class-grid > div .class-desc {
+  background-color: rgba(238, 244, 249, 0.8);
+  color: var(--text-dark);
+  padding: 10px 14px;
+  border-radius: 20px;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+/* Asegurar que si el JS pone un botón "Entrar" dentro de la tarjeta se vea amarillo */
+.class-grid > div button,
+.class-grid > div .btn-enter {
+  align-self: flex-end;
+  background-color: var(--gold);
+  color: var(--text-dark);
+  border: none;
+  padding: 8px 24px;
+  font-weight: 700;
+  border-radius: 20px;
+  cursor: pointer;
+  margin-top: auto;
+  transition: var(--transition);
+}
+
+.class-grid > div button:hover {
+  background-color: var(--gold-hover);
+}
+
+/* ==========================================================================
+   Modales y Toasts
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal-overlay[style*="display: flex"],
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: var(--border-radius-card);
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.modal h3 {
+  margin-top: 0;
+  color: var(--text-dark);
+  font-size: 22px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  background: none;
+  border: 1px solid #c7d2e0;
+  color: #64748b;
+  padding: 12px 24px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #f8fafc;
+}
+
+#toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1100;
+}

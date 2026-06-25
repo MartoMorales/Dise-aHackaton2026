@@ -1,12 +1,9 @@
 // front/js/api.js
-//
-// Helpers compartidos por todas las pantallas: URL base de la API,
-// guardar/leer el token de sesion, y un wrapper de fetch que agrega
-// automaticamente el header Authorization cuando hay sesion activa.
-// front/js/api.js
 // Helpers compartidos: URL base, sesión, fetch autenticado, toasts
 
-const API_BASE_URL = "http://localhost:3000/api";
+// En producción (Vercel) la API está en el mismo origen.
+// En desarrollo cambiá esto a "http://localhost:3000/api"
+const API_BASE_URL = "/api";
 
 /* ── Sesión ─────────────────────────────────────────── */
 function guardarSesion(token, usuario) {
@@ -53,7 +50,8 @@ async function apiFetch(ruta, opciones = {}) {
     headers,
   });
   const datos = await respuesta.json();
-  if (!respuesta.ok) throw new Error(datos.error || "Error en la petición.");
+  // FIX: el backend devuelve { message }, no { error }
+  if (!respuesta.ok) throw new Error(datos.message || datos.error || "Error en la petición.");
   return datos;
 }
 
@@ -75,7 +73,11 @@ function showToast(message, type = "default", duration = 3000) {
 /* ── Socket.io helper ────────────────────────────────── */
 function crearSocket() {
   if (typeof io === "undefined") return null;
-  return io("http://localhost:3000", {
+  // En producción (mismo origen), no hay que poner URL explícita
+  const serverUrl = window.location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : window.location.origin;
+  return io(serverUrl, {
     auth: { token: obtenerToken() },
     transports: ["websocket"],
   });
@@ -95,11 +97,11 @@ function formatearFecha(fecha) {
 
 /* ── Categoría helpers ───────────────────────────────── */
 const CATEGORIAS = {
-  desarrollo:  { label: "Desarrollo",       class: "tag-desarrollo"  },
-  duda:        { label: "Duda puntual",      class: "tag-duda"        },
-  curiosidad:  { label: "Curiosidad",        class: "tag-curiosidad"  },
-  repetir:     { label: "Repetir/Reformular",class: "tag-repetir"     },
-  significado: { label: "Significado",       class: "tag-significado" },
+  desarrollo:  { label: "Desarrollo",        class: "tag-desarrollo"  },
+  duda_puntual:{ label: "Duda puntual",       class: "tag-duda"        },
+  curiosidad:  { label: "Curiosidad",         class: "tag-curiosidad"  },
+  repetir:     { label: "Repetir/Reformular", class: "tag-repetir"     },
+  significado: { label: "Significado",        class: "tag-significado" },
 };
 function catTag(cat) {
   const c = CATEGORIAS[cat] || { label: cat, class: "tag-duda" };

@@ -1,16 +1,9 @@
 // controllers/questionController.js — Funcionalidades 7, 8, 9, 10, 11
-// Crear pregunta, procesar redundancias, actualizar estado
-
 const Question = require("../models/Question");
-const Class = require("../models/Class");
+const Class    = require("../models/Class");
 const { processNewQuestion } = require("../services/questionService");
 
-/**
- * POST /api/questions — Funcionalidad 7
- * Crea una pregunta, verifica reglas, detecta redundancia y calcula prioridad.
- * Body: { classId, text, category, authorSession }
- * Retorna: { question, merged, sortedList }
- */
+/** POST /api/questions */
 async function createQuestion(req, res) {
   try {
     const { classId, text, category, authorSession, sentOutOfClass } = req.body;
@@ -24,7 +17,6 @@ async function createQuestion(req, res) {
     if (text.length > 500) {
       return res.status(400).json({ message: "Máximo 500 caracteres" });
     }
-
     const validCategories = ["desarrollo", "duda_puntual", "curiosidad", "repetir", "significado"];
     if (!validCategories.includes(category)) {
       return res.status(400).json({ message: "Categoría inválida" });
@@ -33,14 +25,9 @@ async function createQuestion(req, res) {
     const cls = await Class.findById(classId);
     if (!cls) return res.status(404).json({ message: "Clase no encontrada" });
 
-    // Funcionalidad extra: si la clase no está activa, se guarda como fuera-de-clase
     const isOutOfClass = cls.status !== "activa";
-
     const { question, merged, sortedList } = await processNewQuestion({
-      classId,
-      text,
-      category,
-      authorSession,
+      classId, text, category, authorSession,
       sentOutOfClass: sentOutOfClass || isOutOfClass,
     });
 
@@ -51,28 +38,20 @@ async function createQuestion(req, res) {
   }
 }
 
-/**
- * GET /api/questions/:classId — Obtiene preguntas de una clase
- * Query: ?status=pendiente|respondida|pospuesta|all&outOfClass=true
- */
+/** GET /api/questions/:classId */
 async function getQuestions(req, res) {
   try {
     const { classId } = req.params;
     const { status, outOfClass } = req.query;
 
-    const filter = { classId };
-
-    if (status === "all") {
-      // sin filtro de status
-    } else if (status) {
-      filter.status = status;
-    } else {
-      filter.status = "pendiente"; // default: solo pendientes si no se especifica
+    const filter = {
+      status: status || "pendiente",
+    };
+    if (outOfClass !== undefined) {
+      filter.sentOutOfClass = outOfClass === "true";
     }
 
-    filter.sentOutOfClass = outOfClass === "true";
-
-    const questions = await Question.find(filter).sort({ priority: -1, createdAt: 1 });
+    const questions = await Question.findByClass(classId, filter);
     res.json(questions);
   } catch (err) {
     console.error("Error en getQuestions:", err.message);
@@ -80,11 +59,7 @@ async function getQuestions(req, res) {
   }
 }
 
-/**
- * PATCH /api/questions/:id/status — Funcionalidad 10
- * Cambia el estado de una pregunta (respondida, pospuesta).
- * Body: { status }
- */
+/** PATCH /api/questions/:id/status */
 async function updateStatus(req, res) {
   try {
     const { status } = req.body;
@@ -92,14 +67,8 @@ async function updateStatus(req, res) {
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: "Estado inválido" });
     }
-
-    const question = await Question.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const question = await Question.updateStatus(req.params.id, status);
     if (!question) return res.status(404).json({ message: "Pregunta no encontrada" });
-
     res.json(question);
   } catch (err) {
     console.error("Error en updateStatus:", err.message);

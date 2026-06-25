@@ -1,42 +1,39 @@
-// back/src/models/User.js
-//
-// FUNCIONALIDAD 1: estructura donde se busca al usuario por mail/usuario
-// y se compara la contraseña hasheada.
-// FUNCIONALIDAD 2: guarda el campo "rol", que se calcula a partir del
-// dominio del mail (ver services/roleValidator.js) y no se puede mandar
-// manualmente desde el frontend.
-//
-// Nota: como el colegio entrega las cuentas (no hay sign up publico),
-// estos documentos se cargan de antemano en la base, por ejemplo con un
-// script de seed. Ver seed.js para un ejemplo de como crear usuarios.
+// models/User.js — Funcionalidades 1 y 2
+// Helpers para leer/escribir users en Neon (PostgreSQL).
 
-// models/User.js — Funcionalidad 1 y 2
-// Define el esquema del usuario con rol automático según dominio de mail
-
-const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const { getDb } = require("../config/db");
 
-const userSchema = new mongoose.Schema(
-  {
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
-    // Funcionalidad 2: el rol se asigna al crear el usuario
-    role: { type: String, enum: ["alumno", "profesor"], required: true },
-    name: { type: String, default: "" },
+const User = {
+  // Busca por email, devuelve null si no existe
+  async findByEmail(email) {
+    const sql = getDb();
+    const rows = await sql`SELECT * FROM users WHERE email = ${email.toLowerCase()} LIMIT 1`;
+    return rows[0] || null;
   },
-  { timestamps: true }
-);
 
-// Hash de contraseña antes de guardar (Funcionalidad 1)
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+  async findById(id) {
+    const sql = getDb();
+    const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
+    return rows[0] || null;
+  },
 
-// Método para comparar contraseña en login (Funcionalidad 1)
-userSchema.methods.comparePassword = function (plain) {
-  return bcrypt.compare(plain, this.password);
+  // Crea usuario hasheando la contraseña
+  async create({ email, password, name = "", role }) {
+    const sql = getDb();
+    const hashed = await bcrypt.hash(password, 10);
+    const rows = await sql`
+      INSERT INTO users (email, password, name, role)
+      VALUES (${email.toLowerCase()}, ${hashed}, ${name}, ${role})
+      RETURNING *
+    `;
+    return rows[0];
+  },
+
+  // Compara contraseña en plano con el hash almacenado
+  async comparePassword(plain, hashed) {
+    return bcrypt.compare(plain, hashed);
+  },
 };
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = User;

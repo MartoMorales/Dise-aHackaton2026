@@ -1,107 +1,103 @@
 // controllers/classController.js — Funcionalidades 3, 4 y 5
-// CRUD de clases: crear, listar, hostear (activar con código), unirse por código
-
 const Class = require("../models/Class");
 const { generateUniqueCode } = require("../utils/codeGenerator");
 
-/**
- * POST /api/classes — Funcionalidad 3
- * Crea una clase nueva vinculada al profesor autenticado.
- * Body: { name, subject, course, maxStudents, schedule }
- */
+/** POST /api/classes */
 async function createClass(req, res) {
-  const { name, subject, course, maxStudents, schedule } = req.body;
-
-  if (!name || !subject || !course) {
-    return res.status(400).json({ message: "Nombre, materia y curso son requeridos" });
+  try {
+    const { name, subject, course, maxStudents, schedule } = req.body;
+    if (!name || !subject || !course) {
+      return res.status(400).json({ message: "Nombre, materia y curso son requeridos" });
+    }
+    const newClass = await Class.create({
+      name, subject, course,
+      maxStudents: maxStudents || 40,
+      schedule: schedule || "",
+      professorId: req.user.id,
+    });
+    res.status(201).json(newClass);
+  } catch (err) {
+    console.error("Error en createClass:", err.message);
+    res.status(500).json({ message: "Error al crear la clase" });
   }
-
-  const newClass = await Class.create({
-    name,
-    subject,
-    course,
-    maxStudents: maxStudents || 40,
-    schedule: schedule || "",
-    professor: req.user.id,
-  });
-
-  res.status(201).json(newClass);
 }
 
-/**
- * GET /api/classes — Lista clases del profesor autenticado
- */
+/** GET /api/classes */
 async function getMyClasses(req, res) {
-  const classes = await Class.find({ professor: req.user.id }).sort({ createdAt: -1 });
-  res.json(classes);
+  try {
+    const classes = await Class.findByProfessor(req.user.id);
+    res.json({ clases: classes });
+  } catch (err) {
+    console.error("Error en getMyClasses:", err.message);
+    res.status(500).json({ message: "Error al obtener clases" });
+  }
 }
 
-/**
- * GET /api/classes/student — Lista clases activas (para alumnos que buscan unirse)
- */
+/** GET /api/classes/active */
 async function getActiveClasses(req, res) {
-  const classes = await Class.find({ status: "activa" }).populate("professor", "name email");
-  res.json(classes);
+  try {
+    const classes = await Class.findActive();
+    res.json({ clases: classes });
+  } catch (err) {
+    console.error("Error en getActiveClasses:", err.message);
+    res.status(500).json({ message: "Error al obtener clases activas" });
+  }
 }
 
-/**
- * POST /api/classes/:id/host — Funcionalidad 4
- * El profesor activa la clase: cambia estado, genera código único.
- */
+/** POST /api/classes/:id/host */
 async function hostClass(req, res) {
-  const cls = await Class.findOne({ _id: req.params.id, professor: req.user.id });
-  if (!cls) {
-    return res.status(404).json({ message: "Clase no encontrada o sin permiso" });
+  try {
+    const cls = await Class.findByProfessorAndId(req.params.id, req.user.id);
+    if (!cls) {
+      return res.status(404).json({ message: "Clase no encontrada o sin permiso" });
+    }
+    const code = await generateUniqueCode();
+    const updated = await Class.updateCodeAndStatus(cls.id, code, "activa");
+    res.json({ message: "Clase iniciada", code, classId: updated.id });
+  } catch (err) {
+    console.error("Error en hostClass:", err.message);
+    res.status(500).json({ message: "Error al iniciar la clase" });
   }
-
-  const code = await generateUniqueCode();
-  cls.status = "activa";
-  cls.code = code;
-  await cls.save();
-
-  res.json({ message: "Clase iniciada", code, classId: cls._id });
 }
 
-/**
- * POST /api/classes/join — Funcionalidad 5
- * Busca la clase activa por código para aprobar el ingreso.
- * Body: { code }
- */
+/** POST /api/classes/join */
 async function joinByCode(req, res) {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ message: "Código requerido" });
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ message: "Código requerido" });
 
-  const cls = await Class.findOne({ code: code.toUpperCase(), status: "activa" }).populate(
-    "professor",
-    "name email"
-  );
+    const cls = await Class.findByCode(code);
+    if (!cls) {
+      return res.status(404).json({ message: "Clase no encontrada o no activa" });
+    }
 
-  if (!cls) {
-    return res.status(404).json({ message: "Clase no encontrada o no activa" });
+    res.json({
+      clase: {
+        _id: cls.id,
+        name: cls.name,
+        subject: cls.subject,
+        course: cls.course,
+        schedule: cls.schedule,
+        professor: { name: cls.professor_name, email: cls.professor_email },
+      },
+    });
+  } catch (err) {
+    console.error("Error en joinByCode:", err.message);
+    res.status(500).json({ message: "Error al unirse a la clase" });
   }
-
-  // Devuelve info básica de la clase para mostrar en el frontend del alumno
-  res.json({
-    classId: cls._id,
-    name: cls.name,
-    subject: cls.subject,
-    course: cls.course,
-    schedule: cls.schedule,
-    professor: cls.professor,
-  });
 }
 
-/**
- * POST /api/classes/:id/close — Cierra la clase activa
- */
+/** POST /api/classes/:id/close */
 async function closeClass(req, res) {
-  const cls = await Class.findOne({ _id: req.params.id, professor: req.user.id });
-  if (!cls) return res.status(404).json({ message: "Clase no encontrada" });
-
-  cls.status = "cerrada";
-  cls.code = null;
-  await cls.save();
-  res.json({ message: "Clase cerrada" });
+  try {
+    const cls = await Class.findByProfessorAndId(req.params.id, req.user.id);
+    if (!cls) return res.status(404).json({ message: "Clase no encontrada" });
+    await Class.clearCode(cls.id);
+    res.json({ message: "Clase cerrada" });
+  } catch (err) {
+    console.error("Error en closeClass:", err.message);
+    res.status(500).json({ message: "Error al cerrar la clase" });
+  }
 }
 
 module.exports = { createClass, getMyClasses, getActiveClasses, hostClass, joinByCode, closeClass };

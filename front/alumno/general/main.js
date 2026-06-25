@@ -22,8 +22,8 @@ const COLORES = ['accent-0','accent-1','accent-2','accent-3','accent-4','accent-
 async function cargarClases() {
   try {
     const [activas, todas] = await Promise.all([
-      apiFetch('/clases/active'),
-      apiFetch('/clases'),
+      apiFetch('/classes/active'),
+      apiFetch('/classes'),
     ]);
     renderGrid('activeGrid', activas.clases || [], 'activa');
     renderGrid('allGrid',    todas.clases    || [], 'todas');
@@ -75,7 +75,7 @@ async function buscarClasePorCodigo() {
   btn.disabled = true; btn.textContent = 'Buscando…';
 
   try {
-    const res = await apiFetch('/clases/join', {
+    const res = await apiFetch('/classes/join', {
       method: 'POST',
       body: JSON.stringify({ code }),
     });

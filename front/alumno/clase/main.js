@@ -135,9 +135,9 @@ async function enviarInbox() {
   const text = document.getElementById('inboxText').value.trim();
   if (!text) { showToast('Escribí tu pregunta primero', 'error'); return; }
   try {
-    await apiFetch('/preguntas', {
+    await apiFetch('/questions', {
       method: 'POST',
-      body: JSON.stringify({ classId, text, category: 'duda', status: 'inbox', anonymous: true }),
+      body: JSON.stringify({ classId, text, category: 'duda_puntual', status: 'inbox', anonymous: true }),
     });
     document.getElementById('inboxText').value = '';
     showToast('Guardada para la próxima clase ✓', 'success');

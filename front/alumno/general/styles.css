@@ -1,176 +1,149 @@
 /* front/alumno/general/styles.css
-   Pantalla "Unirse a clase" (alumno) — replica el diseño adjuntado.
-   Usa el mismo header que la pantalla de profesor, con prefijo ga- (general alumno)
-   para no chocar con clases del CSS global ni de otras pantallas.
+   Pantalla "Tus clases" (alumno) — unirse por código + grids de clases.
+   Reutiliza clases globales (.btn, .input, .modal-overlay, .alert) de css/estilos.css.
+   Prefijo ga- (general alumno) para no chocar con otras pantallas.
 */
 
 :root {
-    --head:    #87B1FF;
-    --gold:    #FFC145;
-    --gold-d:  #f0ad2e;
-    --orange:  #F75C03;
-    --bg:      #EEF4F9;
-    --panel:   #ffffff;
-    --border:  #1e2230;
-    --input-bg:#ffffff;
+    --head:   #87B1FF;
+    --gold:   #FFC145;
+    --gold-d: #f0ad2e;
+    --orange: #F75C03;
   }
   
-  body {
-    min-height: 100vh;
-    background: var(--bg);
-  }
+  body { min-height: 100vh; background: #EEF4F9; }
   
-  /* ── Header (igual al de profesor) ───────────────────── */
+  /* ── Header ───────────────────────────────────────────── */
   .ga-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
     padding: 20px 48px;
     background: var(--head);
   }
   .ga-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 26px;
-    font-weight: 600;
-    color: #000;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 26px; font-weight: 600; color: #000;
     text-decoration: none;
   }
   .ga-brand img { height: 54px; width: auto; object-fit: contain; }
   .ga-brand .accent { color: var(--orange); }
+  
   .ga-user {
-    background: var(--gold);
-    color: #1e2230;
-    border: none;
-    border-radius: 999px;
-    padding: 14px 38px;
-    font-family: inherit;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--gold); color: #1e2230;
+    border: none; border-radius: 999px;
+    padding: 10px 24px 10px 12px; font-family: inherit;
+    font-size: 16px; font-weight: 700; cursor: pointer;
     transition: background .15s, transform .15s;
   }
   .ga-user:hover { background: var(--gold-d); transform: translateY(-1px); }
-  
-  /* ── Layout general ──────────────────────────────────── */
-  .ga-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 56px 40px 100px;
+  .ga-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #1e2230; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
   }
   
-  .ga-panel {
-    display: flex;
-    align-items: stretch;
-    gap: 48px;
-    max-width: 1100px;
-    width: 100%;
-  }
+  /* ── Contenido ────────────────────────────────────────── */
+  .ga-wrap { padding: 32px 40px 100px; max-width: 1200px; margin: 0 auto; }
   
-  /* ── Columna izquierda ───────────────────────────────── */
-  .ga-left {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 36px;
+  .ga-joinbar {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 22px 28px;
+    margin-bottom: 36px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.06);
   }
-  
-  .ga-title {
-    font-size: 2.1rem;
-    font-weight: 700;
-    color: #000;
-    line-height: 1.25;
-    margin: 0;
-  }
-  .ga-title .accent { color: var(--orange); }
-  
-  /* ── Caja de unirse a clase ──────────────────────────── */
-  .ga-joinbox {
-    border: 2px solid var(--border);
-    border-radius: 18px;
-    padding: 28px 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18px;
-  }
-  
-  .ga-label {
-    font-size: 16px;
-    color: #1e2230;
-    text-align: center;
-  }
-  
+  .ga-label { font-size: 14px; font-weight: 700; color: #1e2230; display: block; margin-bottom: 10px; }
+  .ga-joinrow { display: flex; gap: 12px; }
   .ga-input {
-    width: 100%;
-    max-width: 280px;
-    background: var(--input-bg);
+    flex: 1;
+    max-width: 240px;
     border: 1px solid #c7d2e0;
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 12px 16px;
     font-family: inherit;
-    font-size: 20px;
-    letter-spacing: 6px;
-    text-align: center;
+    font-size: 18px;
+    letter-spacing: 4px;
     text-transform: uppercase;
     color: #1e2230;
   }
-  .ga-input:focus {
-    outline: none;
-    border-color: var(--head);
-  }
-  .ga-input.invalid {
-    border-color: #e5484d;
-  }
-  
+  .ga-input:focus { outline: none; border-color: var(--head); }
   .ga-btn-unirse {
-    background: var(--gold);
-    color: #1e2230;
-    border: none;
-    border-radius: 999px;
-    padding: 14px 56px;
-    font-family: inherit;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
+    background: var(--gold); color: #1e2230;
+    border: none; border-radius: 10px;
+    padding: 12px 32px; font-family: inherit;
+    font-size: 15px; font-weight: 700; cursor: pointer;
     transition: background .15s, transform .15s;
   }
   .ga-btn-unirse:hover { background: var(--gold-d); transform: translateY(-1px); }
-  .ga-btn-unirse:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-    transform: none;
+  .ga-btn-unirse:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+  
+  .ga-section { margin-bottom: 40px; }
+  .ga-subtitle { font-size: 1.4rem; font-weight: 700; color: #1e2230; margin: 0 0 18px; }
+  
+  /* ── Grid de clases (cards) ──────────────────────────── */
+  .ga-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
   }
   
-  /* ── Columna derecha: imagen ──────────────────────────── */
-  .ga-right {
-    flex: 1;
-    display: flex;
-    align-items: center;
-  }
-  .ga-image {
-    width: 100%;
-    height: 100%;
-    max-height: 360px;
-    object-fit: cover;
-    border-radius: 18px;
+  .class-card {
+    background: #365D61;
+    border-radius: 14px;
+    padding: 20px 22px;
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 12px;
     box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    transition: transform .15s, box-shadow .15s;
   }
+  .class-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+  
+  .class-card-top { display: flex; align-items: center; justify-content: space-between; }
+  .class-card-icon { font-size: 22px; }
+  .class-card-status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #D4E7FF;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+  .status-dot.activa { background: #1AD302; box-shadow: 0 0 6px #1AD302; }
+  
+  .class-card h3 { color: #fff; font-size: 22px; font-weight: 700; margin: 0; }
+  .class-subject { color: #D4E7FF; font-size: 13px; margin: -8px 0 0; }
+  
+  .class-meta { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .class-meta-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #D4E7FF; }
+  .class-meta-row .icon { font-size: 13px; }
+  
+  /* Variantes de color por índice de tarjeta */
+  .class-card.accent-0 { background: #365D61; }
+  .class-card.accent-1 { background: #3D5A80; }
+  .class-card.accent-2 { background: #5C4D7D; }
+  .class-card.accent-3 { background: #6B5B3E; }
+  .class-card.accent-4 { background: #4A6B5A; }
+  .class-card.accent-5 { background: #5A3D5C; }
+  
+  /* ── Estado vacío ─────────────────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-state h3 { font-size: 16px; margin: 0 0 6px; color: #1e2230; }
+  .empty-state p { font-size: 13px; margin: 0; }
+  
+  /* ── Modal de unión ───────────────────────────────────── */
+  .ga-modal-info p { margin: 6px 0; font-size: 15px; color: #1e2230; }
   
   /* ── Responsive ───────────────────────────────────────── */
-  @media (max-width: 860px) {
-    .ga-panel {
-      flex-direction: column-reverse;
-      gap: 32px;
-    }
-    .ga-title { font-size: 1.7rem; text-align: center; }
-    .ga-joinbox { padding: 24px 20px; }
-    .ga-image { max-height: 240px; }
+  @media (max-width: 900px) {
+    .ga-grid { grid-template-columns: repeat(2, 1fr); }
   }
-  
   @media (max-width: 640px) {
     .ga-header { padding: 12px 18px; }
-    .ga-wrap { padding: 28px 18px 80px; }
+    .ga-wrap { padding: 20px 18px 80px; }
+    .ga-grid { grid-template-columns: 1fr; }
+    .ga-joinrow { flex-direction: column; }
+    .ga-input { max-width: 100%; }
   }

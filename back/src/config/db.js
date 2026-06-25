@@ -1,3 +1,7 @@
+// back/src/config/db.js
+// Conexión a Neon (PostgreSQL) usando el driver @neondatabase/serverless.
+// Crea las tablas si no existen (schema auto-migración simple).
+
 const { neon } = require("@neondatabase/serverless");
 
 let sql;
@@ -9,28 +13,11 @@ function getDb() {
   return sql;
 }
 
-async function queryConReintentos(fn, intentos = 3, delayMs = 500) {
-  for (let i = 1; i <= intentos; i++) {
-    try {
-      return await fn();
-    } catch (err) {
-      const esRed = err.message?.includes("fetch failed") ||
-                    err.message?.includes("ECONNRESET") ||
-                    err.message?.includes("ETIMEDOUT");
-      if (esRed && i < intentos) {
-        console.warn(`⚠️ DB intento ${i} fallido, reintentando en ${delayMs * i}ms...`);
-        await new Promise(r => setTimeout(r, delayMs * i));
-      } else {
-        throw err;
-      }
-    }
-  }
-}
-
 async function conectarDB() {
   try {
     sql = neon(process.env.DATABASE_URL);
 
+    // Crear tablas si no existen
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -85,4 +72,4 @@ async function conectarDB() {
   }
 }
 
-module.exports = { conectarDB, getDb, queryConReintentos };
+module.exports = { conectarDB, getDb };

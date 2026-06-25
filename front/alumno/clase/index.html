@@ -6,16 +6,6 @@
   <title>Clase — Hide &amp; Speak</title>
   <link rel="stylesheet" href="../../css/estilos.css" />
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .cl-back-btn {
-      background: #D9EFFF; color: #1e2230;
-      border: none; border-radius: 999px;
-      padding: 10px 22px; font-family: inherit;
-      font-size: 15px; font-weight: 700; cursor: pointer;
-      transition: background .15s, transform .15s;
-    }
-    .cl-back-btn:hover { background: #fff; transform: translateY(-1px); }
-  </style>
 </head>
 <body>
 
@@ -25,10 +15,7 @@
       <img src="../../img/Solo_logo-removebg-preview.png" alt="Hide & Speak logo" />
       Hide &amp; <span class="accent">Speak</span>
     </a>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <button class="cl-back-btn" onclick="volverAGeneral()" title="Volver a mis clases">← Mis clases</button>
-      <button class="cl-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
-    </div>
+    <button class="cl-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
   </header>
 
   <div class="cl-layout">
@@ -47,6 +34,7 @@
         ></textarea>
         <div class="cl-counter"><span id="charCount">0</span>/500</div>
 
+        <!-- Barra de color: preview del color asignado según categoría elegida -->
         <div class="cl-colorbar" id="colorBar" aria-hidden="true"></div>
 
         <div class="cl-anonrow">

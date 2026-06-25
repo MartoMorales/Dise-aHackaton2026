@@ -39,15 +39,10 @@ function initClassSocket(io) {
           code:     cls.code,
         });
 
-        // Enviar historial de preguntas pendientes al conectarse
+        // Enviar historial de preguntas pendientes al alumno que se une
         const pending = await Question.findPendingByClass(classId);
         if (pending.length > 0) {
-          if (role === "profesor") {
-            const sortedList = sortByPriority(pending);
-            socket.emit("question_update", { sortedList });
-          } else {
-            socket.emit("questions_history", { questions: pending });
-          }
+          socket.emit("questions_history", { questions: pending });
         }
 
         emitStudentCount(io, classId);
@@ -61,27 +56,22 @@ function initClassSocket(io) {
     // ── Funcionalidad 7: ENVIAR PREGUNTA ────────────────────────────────────
     socket.on("send_question", async ({ classId, text, category }) => {
       try {
-        // Fallback: si el frontend no mandó classId, usar el del socket
-        const resolvedClassId = classId || socket.data.classId;
-
-        if (!resolvedClassId) {
-          socket.emit("error", { message: "No estás en ninguna clase" }); return;
-        }
         if (!text || text.trim().length === 0 || text.length > 500) {
           socket.emit("error", { message: "Pregunta inválida" }); return;
         }
         const { question, merged, sortedList } = await processNewQuestion({
-          classId: resolvedClassId,
+          classId,
           text,
           category,
           authorSession: socket.data.sessionId || socket.id,
         });
-        io.to(resolvedClassId).emit("question_update", { question, merged, sortedList });
+        io.to(classId).emit("question_update", { question, merged, sortedList });
       } catch (err) {
         console.error("Error en send_question:", err.message);
         socket.emit("error", { message: "Error al enviar la pregunta" });
       }
     });
+
     // ── Funcionalidad 10: CAMBIAR ESTADO ────────────────────────────────────
     socket.on("update_question_status", async ({ questionId, status, classId }) => {
       try {

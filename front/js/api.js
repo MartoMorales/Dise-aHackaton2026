@@ -37,19 +37,30 @@ function requiereAuth(rolRequerido) {
 }
 
 /* ── Fetch wrapper ───────────────────────────────────── */
+const DEMO_TOKEN = "demo-token";
+
 async function apiFetch(ruta, opciones = {}) {
   const token = obtenerToken();
   const headers = {
     "Content-Type": "application/json",
     ...(opciones.headers || {}),
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  // No enviar el demo-token al backend (no es un JWT válido)
+  if (token && token !== DEMO_TOKEN) headers["Authorization"] = `Bearer ${token}`;
 
   const respuesta = await fetch(`${API_BASE_URL}${ruta}`, {
     ...opciones,
     headers,
   });
+
   const datos = await respuesta.json();
+
+  // Si el token expiró en una ruta protegida (no en login), limpiar sesión
+  if (respuesta.status === 401 && !ruta.includes("/auth/")) {
+    cerrarSesion();
+    return;
+  }
+
   // FIX: el backend devuelve { message }, no { error }
   if (!respuesta.ok) throw new Error(datos.message || datos.error || "Error en la petición.");
   return datos;

@@ -1,9 +1,5 @@
 // front/profesor/general/main.js
-// Pantalla "Tus clases" (profesor). Modo demo: las clases se guardan en
-// localStorage y se renderizan como tarjetas. Al crear una con el botón "+",
-// se agrega una tarjeta nueva en el mismo formato.
-
-const STORAGE_KEY = "demo_clases_profesor";
+// Pantalla "Tus clases" (profesor) — conectada al backend real.
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!requiereAuth("profesor")) return;
@@ -11,51 +7,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const u = obtenerUsuario();
   document.getElementById("userName").textContent = u.nombre || u.email;
 
-  render();
+  cargarClases();
 
   document.getElementById("fab").addEventListener("click", () => abrirModal("modal-crear"));
   document.getElementById("btnCrearConfirm").addEventListener("click", crearClase);
 
-  // Reacomodar columnas al cambiar el tamaño de la ventana
   let lastCols = numCols();
   window.addEventListener("resize", () => {
-    if (numCols() !== lastCols) {
-      lastCols = numCols();
-      render();
-    }
+    if (numCols() !== lastCols) { lastCols = numCols(); renderGrid(clasesCache); }
   });
 });
 
-/* ── Cantidad de columnas según ancho ─────────────────── */
+let clasesCache = [];
+
 function numCols() {
   return window.innerWidth <= 640 ? 1 : 3;
 }
 
-/* ── Persistencia ─────────────────────────────────────── */
-function getClases() {
+/* ── Cargar clases desde el backend ──────────────────── */
+async function cargarClases() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
-    return [];
+    const res = await apiFetch("/classes");
+    clasesCache = res.clases || [];
+    renderGrid(clasesCache);
+  } catch (err) {
+    showToast("Error al cargar clases: " + err.message, "error");
+    renderGrid([]);
   }
 }
-function saveClases(arr) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
 
-/* ── Render ───────────────────────────────────────────── */
-function render() {
+function renderGrid(clases) {
   const grid = document.getElementById("classesGrid");
-  const clases = getClases();
   grid.innerHTML = "";
 
   if (!clases.length) {
-    grid.innerHTML =
-      '<p class="pc-empty">Todavía no creaste ninguna clase. Tocá el botón + para agregar una.</p>';
+    grid.innerHTML = '<p class="pc-empty">Todavía no creaste ninguna clase. Tocá el botón + para agregar una.</p>';
     return;
   }
 
-  // Crear N columnas y repartir por orden de creación: i % N
   const n = numCols();
   const cols = [];
   for (let k = 0; k < n; k++) {
@@ -66,112 +55,90 @@ function render() {
   }
 
   clases.forEach((c, i) => {
-    cols[i % n].insertAdjacentHTML("beforeend", cardHTML(c, i));
+    cols[i % n].insertAdjacentHTML("beforeend", cardHTML(c));
   });
 }
 
-function cardHTML(c, i) {
-  const desc = c.descripcion
-    ? `<div class="pc-desc filled">${escapeHtml(c.descripcion)}</div>`
-    : `<div class="pc-desc">Descripción de la clase</div>`;
+function cardHTML(c) {
+  const desc = c.subject
+    ? `<div class="pc-desc filled">${escapeHtml(c.subject)}</div>`
+    : `<div class="pc-desc">Sin descripción</div>`;
+
+  const estado = c.status === "activa"
+    ? `<span style="color:#1AD302;font-size:13px;font-weight:700;">● Activa</span>`
+    : `<span style="color:#94a3b8;font-size:13px;">● Inactiva</span>`;
 
   return `
     <div class="pc-card">
-      <h3>${escapeHtml(c.nombre)}</h3>
+      <h3>${escapeHtml(c.name)}</h3>
       ${desc}
+      ${estado}
       <div class="pc-card-footer">
-        <button class="pc-iniciar" onclick="iniciarClase(${i})">Iniciar</button>
-        <button class="pc-eliminar" onclick="eliminarClase(${i})">Eliminar</button>
+        <button class="pc-iniciar" onclick="iniciarClase('${c.id}')">Iniciar</button>
+        <button class="pc-eliminar" onclick="eliminarClase('${c.id}', '${escapeHtml(c.name)}')">Eliminar</button>
       </div>
     </div>`;
 }
 
-/* ── Crear clase ──────────────────────────────────────── */
-function crearClase() {
-  const nombre = document.getElementById("f-name").value.trim();
+/* ── Crear clase ─────────────────────────────────────── */
+async function crearClase() {
+  const nombre     = document.getElementById("f-name").value.trim();
   const descripcion = document.getElementById("f-desc").value.trim();
-  const errorBox = document.getElementById("crear-error");
+  const errorBox   = document.getElementById("crear-error");
 
   if (!nombre) {
     errorBox.textContent = "Poné un nombre para la clase.";
     errorBox.style.display = "block";
     return;
   }
-
-  const clases = getClases();
-  clases.push({ nombre, descripcion });
-  saveClases(clases);
-
-  // Limpiar y cerrar
-  document.getElementById("f-name").value = "";
-  document.getElementById("f-desc").value = "";
   errorBox.style.display = "none";
-  cerrarModal("modal-crear");
 
-  render();
+  try {
+    await apiFetch("/classes", {
+      method: "POST",
+      body: JSON.stringify({ name: nombre, subject: descripcion, course: "—", schedule: "" }),
+    });
+    document.getElementById("f-name").value = "";
+    document.getElementById("f-desc").value = "";
+    cerrarModal("modal-crear");
+    showToast("Clase creada ✓", "success");
+    await cargarClases();
+  } catch (err) {
+    errorBox.textContent = err.message || "Error al crear la clase.";
+    errorBox.style.display = "block";
+  }
 }
 
-/* ── Eliminar clase ───────────────────────────────────── */
-function eliminarClase(i) {
-  const clases = getClases();
-  const nombre = clases[i] ? clases[i].nombre : "esta clase";
+/* ── Eliminar clase ──────────────────────────────────── */
+async function eliminarClase(id, nombre) {
   if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
-
-  clases.splice(i, 1);
-  saveClases(clases);
-  render();
-}
-
-/* ── Iniciar clase ────────────────────────────────────── */
-function iniciarClase(i) {
-  const clases = getClases();
-  const c = clases[i];
-  if (!c) return;
-
-  // id estable por clase (para guardar/recuperar sus preguntas)
-  if (!c.id) {
-    c.id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    saveClases(clases);
+  try {
+    await apiFetch(`/classes/${id}/close`, { method: "POST" });
+    showToast("Clase eliminada", "success");
+    await cargarClases();
+  } catch (err) {
+    showToast("Error al eliminar: " + err.message, "error");
   }
-
-  // Código SIEMPRE nuevo y aleatorio cada vez que se abre la sala
-  const codigo = generarCodigo();
-
-  sessionStorage.setItem("classId", c.id);
-  sessionStorage.setItem("classCode", codigo);
-  sessionStorage.setItem(
-    "classDemo",
-    JSON.stringify({
-      name: c.nombre,
-      subject: c.descripcion || "",
-      course: "",
-      schedule: "",
-    })
-  );
-
-  window.location.href = "../clase/index.html";
 }
 
-function generarCodigo() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let k = 0; k < 6; k++) {
-    s += chars[Math.floor(Math.random() * chars.length)];
+/* ── Iniciar clase ───────────────────────────────────── */
+async function iniciarClase(id) {
+  try {
+    const res = await apiFetch(`/classes/${id}/host`, { method: "POST" });
+    sessionStorage.setItem("classId",   res.classId);
+    sessionStorage.setItem("classCode", res.code);
+    window.location.href = "../clase/index.html";
+  } catch (err) {
+    showToast("Error al iniciar: " + err.message, "error");
   }
-  return s;
 }
 
-/* ── Helpers de modal ─────────────────────────────────── */
-function abrirModal(id) {
-  document.getElementById(id).classList.add("open");
-}
-function cerrarModal(id) {
-  document.getElementById(id).classList.remove("open");
-}
+/* ── Helpers ─────────────────────────────────────────── */
+function abrirModal(id)  { document.getElementById(id).classList.add("open");    }
+function cerrarModal(id) { document.getElementById(id).classList.remove("open"); }
 
-/* ── Util ─────────────────────────────────────────────── */
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (m) =>
+  return String(s).replace(/[&<>"']/g, m =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
   );
 }

@@ -21,12 +21,9 @@ const COLORES = ['accent-0','accent-1','accent-2','accent-3','accent-4','accent-
 
 async function cargarClases() {
   try {
-    const [activas, todas] = await Promise.all([
-      apiFetch('/classes/active'),
-      apiFetch('/classes'),
-    ]);
-    renderGrid('activeGrid', activas.clases || [], 'activa');
-    renderGrid('allGrid',    todas.clases    || [], 'todas');
+    const res = await apiFetch('/classes/active');
+    renderGrid('activeGrid', res.clases || [], 'activa');
+    renderGrid('allGrid',    res.clases || [], 'todas');
   } catch (err) {
     renderGrid('activeGrid', [], 'activa');
     renderGrid('allGrid', [], 'todas');
@@ -46,7 +43,7 @@ function renderGrid(gridId, clases, tipo) {
   }
   grid.innerHTML = clases.map((cls, i) => `
     <div class="class-card ${COLORES[i % COLORES.length]}"
-         onclick="irAClase('${cls._id}', '${cls.code || ''}')">
+         onclick="irAClase('${cls.id}', '${cls.code || ''}')">
       <div class="class-card-top">
         <div class="class-card-icon">📚</div>
         <div class="class-card-status">
@@ -80,7 +77,7 @@ async function buscarClasePorCodigo() {
       body: JSON.stringify({ code }),
     });
     const cls = res.clase;
-    classIdPendiente = cls._id;
+    classIdPendiente = cls.id;
     codePendiente = code;
     document.getElementById('mji-subject').textContent = cls.subject || cls.name;
     document.getElementById('mji-course').textContent  = cls.course  || '—';

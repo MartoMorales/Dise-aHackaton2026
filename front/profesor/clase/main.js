@@ -1,123 +1,141 @@
 // front/profesor/clase/main.js
-// Panel de la sala iniciada (profesor) — modo demo.
-// Muestra los mensajes que irían mandando los alumnos, con acciones
-// de responder (✓) y eliminar (🗑). Sin backend.
+// Panel del profesor en la sala — conectado al backend real via Socket.io.
 
 const SVG_TRASH =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 
-// Categorías que puede elegir el alumno (etiqueta + color)
 const CAT_INFO = {
-  desarrollo:  { label: "Desarrollar",         color: "#7C3AED" },
-  duda:        { label: "Duda puntual",        color: "#2563EB" },
-  repetir:     { label: "Repetir/Reformular",  color: "#D97706" },
-  significado: { label: "Significado",         color: "#DC2626" },
+  desarrollo:   { label: "Desarrollar",         color: "#7C3AED" },
+  duda_puntual: { label: "Duda puntual",         color: "#2563EB" },
+  curiosidad:   { label: "Curiosidad",           color: "#059669" },
+  repetir:      { label: "Repetir/Reformular",   color: "#D97706" },
+  significado:  { label: "Significado",          color: "#DC2626" },
 };
 
-// Mensajes de ejemplo que se siembran la primera vez que se abre una clase
-const MENSAJES_DEMO = [
-  { autor: "Anónimo",    categoria: "duda",        texto: "¿Por qué la Revolución de Mayo fue en 1810 y no antes?" },
-  { autor: "Anónimo",    categoria: "repetir",     texto: "¿Podés repetir las causas de la independencia?" },
-  { autor: "Martina G.", categoria: "significado", texto: "¿Qué diferencia hay entre unitarios y federales?" },
-  { autor: "Anónimo",    categoria: "desarrollo",  texto: "No entendí lo del Cabildo Abierto, ¿lo explicás de nuevo?" },
-  { autor: "Tomás R.",   categoria: "duda",        texto: "¿Esto entra en la prueba del viernes?" },
-];
-
-let mensajes = [];
-let CLASS_KEY = null;
+let socket   = null;
+let classId  = null;
+let classCode = null;
+let preguntasMap = new Map();
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!requiereAuth("profesor")) return;
 
-  // Datos de la clase (guardados al tocar "Iniciar")
-  const classId   = sessionStorage.getItem("classId") || "x";
-  const classCode = sessionStorage.getItem("classCode") || "XXXXXX";
-  let className = "Clase";
-  const demo = sessionStorage.getItem("classDemo");
-  if (demo) {
-    try { className = JSON.parse(demo).name || "Clase"; } catch {}
-  }
+  classId   = sessionStorage.getItem("classId");
+  classCode = sessionStorage.getItem("classCode");
 
-  document.getElementById("clsName").textContent = "Clase: " + className;
-  document.getElementById("clsCode").textContent = "Código: " + classCode;
-
-  const u = obtenerUsuario();
-  document.getElementById("userName").textContent = u.nombre || u.email;
-
-  // Las preguntas no respondidas se guardan por clase y se recuperan al reabrir
-  CLASS_KEY = "demo_mensajes_v2_" + classId;
-  mensajes = cargarMensajes();
-
-  render();
-});
-
-/* ── Persistencia de preguntas ────────────────────────── */
-function cargarMensajes() {
-  const raw = localStorage.getItem(CLASS_KEY);
-  if (raw === null) {
-    // Primera vez para esta clase: sembrar ejemplos
-    const seed = MENSAJES_DEMO.slice();
-    localStorage.setItem(CLASS_KEY, JSON.stringify(seed));
-    return seed;
-  }
-  try { return JSON.parse(raw) || []; } catch { return []; }
-}
-
-function guardarMensajes() {
-  localStorage.setItem(CLASS_KEY, JSON.stringify(mensajes));
-}
-
-function render() {
-  const list = document.getElementById("msgList");
-
-  if (!mensajes.length) {
-    list.innerHTML = '<div class="cls-empty">No hay mensajes por ahora.</div>';
+  if (!classId || !classCode) {
+    window.location.href = "../general/index.html";
     return;
   }
 
-  list.innerHTML = mensajes.map((m, i) => cardHTML(m, i)).join("");
+  const u = obtenerUsuario();
+  document.getElementById("userName").textContent = u.nombre || u.email;
+  document.getElementById("clsCode").textContent  = "Código: " + classCode;
+
+  initSocket();
+});
+
+/* ── Socket ──────────────────────────────────────────── */
+function initSocket() {
+  socket = crearSocket();
+  if (!socket) { showToast("No se pudo conectar con el servidor", "error"); return; }
+
+  socket.on("connect", () => {
+    socket.emit("join_class", {
+      code:      classCode,
+      role:      "profesor",
+      sessionId: socket.id,
+    });
+  });
+
+  socket.on("class_info", (cls) => {
+    classId = cls.classId;
+    document.getElementById("clsName").textContent = "Clase: " + cls.name;
+    document.getElementById("clsCode").textContent = "Código: " + cls.code;
+  });
+
+  socket.on("student_count", ({ count }) => {
+    // opcional: mostrar cantidad de alumnos si hay un elemento para eso
+    const el = document.getElementById("studentCount");
+    if (el) el.textContent = count + " alumnos";
+  });
+
+  // Llega cuando se crea/actualiza una pregunta
+  socket.on("question_update", ({ question, sortedList }) => {
+    if (sortedList) {
+      preguntasMap.clear();
+      sortedList.forEach(q => preguntasMap.set(q.id, q));
+    } else if (question) {
+      preguntasMap.set(question.id, question);
+    }
+    render();
+  });
+
+  socket.on("error", ({ message }) => showToast(message, "error"));
+
+  socket.on("disconnect", () => showToast("Desconectado del servidor", "error"));
 }
 
-function cardHTML(m, i) {
-  const autor = m.autor || "Anónimo";
-  const box = m.texto
-    ? `<div class="msg-box">${escapeHtml(m.texto)}</div>`
-    : `<div class="msg-box placeholder">Mensaje de alumnos</div>`;
+/* ── Render ──────────────────────────────────────────── */
+function render() {
+  const list = document.getElementById("msgList");
 
-  const cat = CAT_INFO[m.categoria] || CAT_INFO.duda;
-  const catTag = `<div class="msg-cat" style="background:${cat.color}">${cat.label}</div>`;
+  const preguntas = [...preguntasMap.values()]
+    .filter(q => q.status === "pendiente" || q.status === "pospuesta")
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+  if (!preguntas.length) {
+    list.innerHTML = '<div class="cls-empty">No hay preguntas por ahora.</div>';
+    return;
+  }
+
+  list.innerHTML = preguntas.map(q => cardHTML(q)).join("");
+}
+
+function cardHTML(q) {
+  const cat    = CAT_INFO[q.category] || { label: q.category, color: "#2563EB" };
+  const autor  = q.author_session && q.author_session !== "anónimo"
+    ? q.author_session
+    : "Anónimo";
+  const prioTag = (q.priority > 1)
+    ? `<span style="margin-left:8px;color:#D97706;font-size:13px;font-weight:700;">🔥 ×${q.priority}</span>`
+    : "";
 
   return `
     <div class="msg-card">
-      <h3>${escapeHtml(autor)}</h3>
-      ${box}
+      <h3>${escapeHtml(autor)}${prioTag}</h3>
+      <div class="msg-box">${escapeHtml(q.text)}</div>
       <div class="msg-footer">
-        ${catTag}
+        <div class="msg-cat" style="background:${cat.color}">${cat.label}</div>
         <div class="msg-actions">
-          <button class="msg-btn msg-ok"  onclick="responder(${i})"  title="Marcar como respondida">✓</button>
-          <button class="msg-btn msg-del" onclick="eliminar(${i})"   title="Eliminar">${SVG_TRASH}</button>
+          <button class="msg-btn msg-ok"  onclick="responder('${q.id}')"  title="Marcar como respondida">✓</button>
+          <button class="msg-btn msg-del" onclick="eliminar('${q.id}')"   title="Eliminar">${SVG_TRASH}</button>
         </div>
       </div>
     </div>`;
 }
 
-/* ── Acciones ─────────────────────────────────────────── */
-function responder(i) {
-  // Marcar como respondida = sacarla de la lista (no se vuelve a guardar)
-  mensajes.splice(i, 1);
-  guardarMensajes();
+/* ── Acciones ────────────────────────────────────────── */
+function responder(questionId) {
+  if (!socket) return;
+  socket.emit("update_question_status", { questionId, status: "respondida", classId });
+  preguntasMap.delete(questionId);
   render();
 }
 
-function eliminar(i) {
-  mensajes.splice(i, 1);
-  guardarMensajes();
-  render();
+async function eliminar(questionId) {
+  try {
+    await apiFetch(`/moderation/question/${questionId}`, { method: "DELETE" });
+    preguntasMap.delete(questionId);
+    render();
+  } catch (err) {
+    showToast("Error al eliminar: " + err.message, "error");
+  }
 }
 
-/* ── Util ─────────────────────────────────────────────── */
+/* ── Util ────────────────────────────────────────────── */
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (m) =>
+  return String(s).replace(/[&<>"']/g, m =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
   );
 }

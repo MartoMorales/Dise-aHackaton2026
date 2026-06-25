@@ -4,7 +4,7 @@
 let socket = null;
 let classId = null;
 let classCode = null;
-let selectedCat = 'duda';
+let selectedCat = 'duda_puntual';
 
 const RISK_THRESHOLD = 60;
 
@@ -151,12 +151,12 @@ const questionsMap = new Map();
 
 function renderFeed(questions) {
   questionsMap.clear();
-  questions.forEach(q => questionsMap.set(q._id, q));
+  questions.forEach(q => questionsMap.set(q.id, q));
   redrawFeed();
 }
 
 function addOrUpdateQuestion(q) {
-  questionsMap.set(q._id, q);
+  questionsMap.set(q.id, q);
   redrawFeed();
 }
 

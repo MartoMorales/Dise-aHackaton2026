@@ -39,6 +39,12 @@ function initClassSocket(io) {
           code:     cls.code,
         });
 
+        // Enviar historial de preguntas pendientes al alumno que se une
+        const pending = await Question.findPendingByClass(classId);
+        if (pending.length > 0) {
+          socket.emit("questions_history", { questions: pending });
+        }
+
         emitStudentCount(io, classId);
         console.log(`👤 Socket ${socket.id} unido a clase ${classId} como ${role}`);
       } catch (err) {

@@ -3,304 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clase — Anónimas ORT</title>
+  <title>Clase — Hide &amp; Speak</title>
   <link rel="stylesheet" href="../../css/estilos.css" />
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    body { min-height: 100vh; background: var(--bg); }
-
-    .page-wrap {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 24px 20px 60px;
-    }
-
-    /* ── Info card de la clase ── */
-    .class-info-bar {
-      background: white;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      display: flex; align-items: center; gap: 16px;
-      box-shadow: var(--shadow-sm);
-    }
-    .class-info-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-      background: #10B981;
-      box-shadow: 0 0 0 3px #D1FAE5;
-      flex-shrink: 0;
-      animation: pulse-green 2s infinite;
-    }
-    @keyframes pulse-green {
-      0%, 100% { box-shadow: 0 0 0 3px #D1FAE5; }
-      50%       { box-shadow: 0 0 0 6px #D1FAE5; }
-    }
-    .class-info-text { flex: 1; }
-    .class-info-text h2 { font-size: 1.1rem; }
-    .class-info-text p  { color: var(--text-muted); font-size: 13px; }
-    .class-info-meta {
-      display: flex; gap: 16px; flex-wrap: wrap;
-    }
-    .meta-chip {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 12px; color: var(--text-muted); font-weight: 500;
-    }
-
-    /* ── Barra de riesgo de anonimato ── */
-    .risk-banner {
-      background: #FEF3C7; border: 1px solid #FDE68A;
-      border-radius: var(--radius-md);
-      padding: 14px 16px;
-      margin-bottom: 20px;
-      display: none;
-    }
-    .risk-banner.show { display: flex; gap: 10px; align-items: flex-start; }
-    .risk-banner .risk-icon { font-size: 20px; flex-shrink: 0; }
-    .risk-banner .risk-text { font-size: 13px; color: #92400E; }
-    .risk-bar-wrap {
-      height: 6px; background: #FDE68A; border-radius: 3px;
-      margin-top: 6px;
-    }
-    .risk-bar-fill {
-      height: 100%; border-radius: 3px;
-      background: linear-gradient(90deg, #D97706, #DC2626);
-      transition: width .4s ease;
-    }
-
-    /* ── Formulario de pregunta ── */
-    .ask-card {
-      background: white;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      margin-bottom: 28px;
-      box-shadow: var(--shadow-sm);
-    }
-    .ask-card h3 { font-size: 15px; margin-bottom: 16px; }
-
-    .category-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
-      margin-bottom: 16px;
-    }
-    .cat-btn {
-      border: 2px solid transparent;
-      border-radius: var(--radius-md);
-      padding: 8px 6px;
-      font-family: inherit; font-size: 11px; font-weight: 600;
-      cursor: pointer; text-align: center; transition: all .15s;
-      background: var(--bg);
-    }
-    .cat-btn:hover { transform: translateY(-1px); }
-    .cat-btn.selected { border-color: currentColor; background: white; }
-
-    .cat-btn.c-desarrollo  { color: #7C3AED; }
-    .cat-btn.c-duda        { color: #2563EB; }
-    .cat-btn.c-curiosidad  { color: #059669; }
-    .cat-btn.c-repetir     { color: #D97706; }
-    .cat-btn.c-significado { color: #DC2626; }
-
-    .cat-btn.selected.c-desarrollo  { background: #EDE9FE; }
-    .cat-btn.selected.c-duda        { background: #DBEAFE; }
-    .cat-btn.selected.c-curiosidad  { background: #D1FAE5; }
-    .cat-btn.selected.c-repetir     { background: #FEF3C7; }
-    .cat-btn.selected.c-significado { background: #FEE2E2; }
-
-    .cat-btn .cat-emoji { font-size: 18px; display: block; margin-bottom: 4px; }
-
-    .ask-textarea {
-      width: 100%; min-height: 90px;
-      border: 1.5px solid var(--border); border-radius: var(--radius-md);
-      padding: 12px 14px;
-      font-family: inherit; font-size: 15px; resize: vertical;
-      outline: none; transition: border-color .15s;
-      color: var(--text);
-    }
-    .ask-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-100); }
-
-    .ask-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-top: 14px; gap: 12px;
-    }
-    .anon-toggle {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--text-muted); cursor: pointer;
-    }
-    .anon-toggle input[type="checkbox"] { cursor: pointer; }
-    .char-count { font-size: 12px; color: var(--text-muted); }
-
-    /* ── Feed de preguntas ── */
-    .feed-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .feed-header h3 { font-size: 15px; font-weight: 700; }
-    .feed-count {
-      background: var(--blue-50); color: var(--blue);
-      border-radius: 20px; padding: 3px 10px;
-      font-size: 12px; font-weight: 700;
-    }
-
-    .question-list {
-      display: flex; flex-direction: column; gap: 10px;
-    }
-
-    .question-item {
-      background: white;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 14px 16px;
-      border-left-width: 4px;
-      transition: box-shadow .15s;
-    }
-    .question-item:hover { box-shadow: var(--shadow-sm); }
-    .qi-top {
-      display: flex; align-items: center; gap: 8px;
-      margin-bottom: 8px;
-    }
-    .qi-author { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-    .qi-time   { font-size: 11px; color: var(--text-muted); margin-left: auto; }
-    .qi-text   { font-size: 14px; color: var(--text); line-height: 1.5; }
-
-    .qi-status {
-      display: inline-flex; align-items: center; gap: 5px;
-      margin-top: 8px; font-size: 11px; font-weight: 600;
-    }
-    .qi-status.respondida { color: #059669; }
-    .qi-status.pendiente  { color: var(--text-muted); }
-
-    .priority-badge {
-      margin-left: auto;
-      display: flex; align-items: center; gap: 4px;
-      font-size: 11px; font-weight: 700; color: var(--blue);
-    }
-
-    .empty-feed {
-      text-align: center; padding: 40px 20px;
-      color: var(--text-muted); font-size: 14px;
-    }
-    .empty-feed .icon { font-size: 36px; display: block; margin-bottom: 10px; }
-
-    /* ── Preguntas fuera de clase ── */
-    .inbox-section {
-      margin-top: 32px;
-      background: white;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-    }
-    .inbox-section h3 { font-size: 14px; margin-bottom: 4px; }
-    .inbox-section p  { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
-
-    @media (max-width: 600px) {
-      .category-grid { grid-template-columns: repeat(3, 1fr); }
-      .class-info-meta { flex-direction: column; gap: 6px; }
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar">
-    <a href="../general/index.html" class="navbar-brand">
-      <div class="logo-icon">💬</div>
-      Anónimas
+  <!-- Header -->
+  <header class="cl-header">
+    <a href="../../index.html" class="cl-brand">
+      <img src="../../img/Solo_logo-removebg-preview.png" alt="Hide & Speak logo" />
+      Hide &amp; <span class="accent">Speak</span>
     </a>
-    <div class="navbar-actions">
-      <div id="connStatus" class="badge badge-muted">Conectando…</div>
-      <button class="btn btn-ghost btn-sm" onclick="cerrarSesion()">Salir</button>
-    </div>
-  </nav>
+    <button class="cl-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
+  </header>
 
-  <div class="page-wrap">
+  <div class="cl-layout">
 
-    <!-- Info clase -->
-    <div class="class-info-bar">
-      <div class="class-info-dot"></div>
-      <div class="class-info-text">
-        <h2 id="className">Cargando clase…</h2>
-        <p id="classSubject">—</p>
+    <!-- Columna izquierda: form de pregunta -->
+    <main class="cl-left">
+      <div class="cl-card">
+        <h1 class="cl-title" id="className">Clase (curso)</h1>
+
+        <label class="cl-label" for="f-text">Dejá tu pregunta acá</label>
+        <textarea
+          class="cl-textarea"
+          id="f-text"
+          maxlength="500"
+          placeholder="Escribe tu mensaje aquí..."
+        ></textarea>
+        <div class="cl-counter"><span id="charCount">0</span>/500</div>
+
+        <!-- Barra de color: preview del color asignado según categoría elegida -->
+        <div class="cl-colorbar" id="colorBar" aria-hidden="true"></div>
+
+        <div class="cl-anonrow">
+          <span class="cl-label cl-label-inline">¿Querés que sea anónimo?</span>
+          <div class="cl-toggle-group" role="group" aria-label="Anónimo">
+            <button type="button" class="cl-toggle-btn active" id="btnAnonSi" data-value="true">Si</button>
+            <button type="button" class="cl-toggle-btn" id="btnAnonNo" data-value="false">No</button>
+          </div>
+        </div>
+
+        <div class="cl-categorias">
+          <span class="cl-label cl-label-inline">Categoría:</span>
+          <div class="cl-cat-grid" id="catGrid">
+            <button type="button" class="cl-cat-btn" data-cat="desarrollo">Desarrollar</button>
+            <button type="button" class="cl-cat-btn" data-cat="repetir">Repetir / Reformular</button>
+            <button type="button" class="cl-cat-btn" data-cat="duda_puntual">Duda puntual</button>
+            <button type="button" class="cl-cat-btn" data-cat="significado">Significado</button>
+            <button type="button" class="cl-cat-btn" data-cat="curiosidad">Curiosidad</button>
+          </div>
+        </div>
+
+        <div id="send-error" class="alert alert-error" style="display:none"></div>
+
+        <div class="cl-footer-row">
+          <button class="cl-btn-enviar" id="btnEnviar">Enviar</button>
+        </div>
       </div>
-      <div class="class-info-meta">
-        <div class="meta-chip">🏫 <span id="classCourse">—</span></div>
-        <div class="meta-chip">🕐 <span id="classSchedule">—</span></div>
-        <div class="meta-chip">👥 <span id="classCount">—</span> alumnos</div>
-      </div>
-    </div>
+    </main>
 
-    <!-- Banner riesgo anonimato -->
-    <div class="risk-banner" id="riskBanner">
-      <div class="risk-icon">⚠️</div>
-      <div class="risk-text">
-        <strong>Atención:</strong> Esta pregunta tiene un alto nivel de repetición.
-        Si sigue aumentando, <strong>tu identidad podría quedar expuesta</strong>.
-        <div class="risk-bar-wrap"><div class="risk-bar-fill" id="riskBar" style="width:0%"></div></div>
+    <!-- Columna derecha: feed de preguntas en vivo -->
+    <aside class="cl-right">
+      <div class="cl-right-header">Mensajes</div>
+      <div class="cl-feed" id="feed">
+        <p class="cl-feed-empty" id="feedEmpty">Todavía no hay preguntas en esta clase.</p>
       </div>
-    </div>
-
-    <!-- Formulario preguntar -->
-    <div class="ask-card">
-      <h3>💬 Hacé tu pregunta</h3>
-      <div class="category-grid">
-        <button class="cat-btn c-desarrollo" data-cat="desarrollo">
-          <span class="cat-emoji">📖</span>Desarrollo
-        </button>
-        <button class="cat-btn c-duda selected" data-cat="duda">
-          <span class="cat-emoji">❓</span>Duda puntual
-        </button>
-        <button class="cat-btn c-curiosidad" data-cat="curiosidad">
-          <span class="cat-emoji">💡</span>Curiosidad
-        </button>
-        <button class="cat-btn c-repetir" data-cat="repetir">
-          <span class="cat-emoji">🔁</span>Repetir
-        </button>
-        <button class="cat-btn c-significado" data-cat="significado">
-          <span class="cat-emoji">📌</span>Significado
-        </button>
-      </div>
-
-      <textarea
-        class="ask-textarea"
-        id="questionText"
-        placeholder="Escribí tu pregunta acá…"
-        maxlength="500"
-      ></textarea>
-
-      <div class="ask-footer">
-        <label class="anon-toggle">
-          <input type="checkbox" id="anonCheck" checked />
-          Enviar anónimamente
-        </label>
-        <span class="char-count"><span id="charCount">0</span>/500</span>
-        <button class="btn btn-primary" id="btnSend">Enviar pregunta</button>
-      </div>
-    </div>
-
-    <!-- Feed de preguntas -->
-    <div class="feed-header">
-      <h3>Preguntas de la clase</h3>
-      <span class="feed-count" id="feedCount">0</span>
-    </div>
-    <div class="question-list" id="questionFeed">
-      <div class="empty-feed">
-        <span class="icon">🤫</span>
-        Todavía no hay preguntas. ¡Sé el primero!
-      </div>
-    </div>
-
-    <!-- Inbox fuera de clase -->
-    <div class="inbox-section">
-      <h3>📬 Preguntas fuera de clase</h3>
-      <p>¿Tenés una duda para la próxima clase? Mandala acá y aparecerá al inicio de la siguiente sesión.</p>
-      <textarea class="ask-textarea" id="inboxText" placeholder="Tu pregunta para la próxima clase…" maxlength="500" style="min-height:70px"></textarea>
-      <div style="margin-top:10px;display:flex;justify-content:flex-end">
-        <button class="btn btn-secondary btn-sm" id="btnInbox">Guardar para la próxima clase</button>
-      </div>
-    </div>
+    </aside>
 
   </div>
 
   <script src="../../js/api.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="../../js/socket.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

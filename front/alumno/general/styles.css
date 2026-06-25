@@ -1,0 +1,176 @@
+/* front/alumno/general/styles.css
+   Pantalla "Unirse a clase" (alumno) — replica el diseño adjuntado.
+   Usa el mismo header que la pantalla de profesor, con prefijo ga- (general alumno)
+   para no chocar con clases del CSS global ni de otras pantallas.
+*/
+
+:root {
+    --head:    #87B1FF;
+    --gold:    #FFC145;
+    --gold-d:  #f0ad2e;
+    --orange:  #F75C03;
+    --bg:      #EEF4F9;
+    --panel:   #ffffff;
+    --border:  #1e2230;
+    --input-bg:#ffffff;
+  }
+  
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+  }
+  
+  /* ── Header (igual al de profesor) ───────────────────── */
+  .ga-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    background: var(--head);
+  }
+  .ga-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 26px;
+    font-weight: 600;
+    color: #000;
+    text-decoration: none;
+  }
+  .ga-brand img { height: 54px; width: auto; object-fit: contain; }
+  .ga-brand .accent { color: var(--orange); }
+  .ga-user {
+    background: var(--gold);
+    color: #1e2230;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 38px;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .ga-user:hover { background: var(--gold-d); transform: translateY(-1px); }
+  
+  /* ── Layout general ──────────────────────────────────── */
+  .ga-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 56px 40px 100px;
+  }
+  
+  .ga-panel {
+    display: flex;
+    align-items: stretch;
+    gap: 48px;
+    max-width: 1100px;
+    width: 100%;
+  }
+  
+  /* ── Columna izquierda ───────────────────────────────── */
+  .ga-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 36px;
+  }
+  
+  .ga-title {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #000;
+    line-height: 1.25;
+    margin: 0;
+  }
+  .ga-title .accent { color: var(--orange); }
+  
+  /* ── Caja de unirse a clase ──────────────────────────── */
+  .ga-joinbox {
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  
+  .ga-label {
+    font-size: 16px;
+    color: #1e2230;
+    text-align: center;
+  }
+  
+  .ga-input {
+    width: 100%;
+    max-width: 280px;
+    background: var(--input-bg);
+    border: 1px solid #c7d2e0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 20px;
+    letter-spacing: 6px;
+    text-align: center;
+    text-transform: uppercase;
+    color: #1e2230;
+  }
+  .ga-input:focus {
+    outline: none;
+    border-color: var(--head);
+  }
+  .ga-input.invalid {
+    border-color: #e5484d;
+  }
+  
+  .ga-btn-unirse {
+    background: var(--gold);
+    color: #1e2230;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 56px;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .ga-btn-unirse:hover { background: var(--gold-d); transform: translateY(-1px); }
+  .ga-btn-unirse:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  /* ── Columna derecha: imagen ──────────────────────────── */
+  .ga-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+  .ga-image {
+    width: 100%;
+    height: 100%;
+    max-height: 360px;
+    object-fit: cover;
+    border-radius: 18px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  }
+  
+  /* ── Responsive ───────────────────────────────────────── */
+  @media (max-width: 860px) {
+    .ga-panel {
+      flex-direction: column-reverse;
+      gap: 32px;
+    }
+    .ga-title { font-size: 1.7rem; text-align: center; }
+    .ga-joinbox { padding: 24px 20px; }
+    .ga-image { max-height: 240px; }
+  }
+  
+  @media (max-width: 640px) {
+    .ga-header { padding: 12px 18px; }
+    .ga-wrap { padding: 28px 18px 80px; }
+  }

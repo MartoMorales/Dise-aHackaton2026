@@ -1,11 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unirse a clase — Hide &amp; Speak</title>
+  <link rel="stylesheet" href="../../css/estilos.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    
+
+  <!-- Header -->
+  <header class="ga-header">
+    <a href="../../index.html" class="ga-brand">
+      <img src="../../img/Solo_logo-removebg-preview.png" alt="Hide & Speak logo" />
+      Hide &amp; <span class="accent">Speak</span>
+    </a>
+    <button class="ga-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
+  </header>
+
+  <!-- Contenido -->
+  <main class="ga-wrap">
+    <div class="ga-panel">
+
+      <!-- Columna izquierda: bienvenida + form de código -->
+      <div class="ga-left">
+        <h1 class="ga-title">
+          ¡Bienvenido a Hide &amp; <span class="accent">Speak</span>,
+          <span id="userFirstName">Usuario</span>!
+        </h1>
+
+        <div class="ga-joinbox">
+          <label for="f-code" class="ga-label">Ingresa el codigo de tu clase</label>
+          <input
+            class="ga-input"
+            type="text"
+            id="f-code"
+            maxlength="6"
+            autocomplete="off"
+            placeholder="______"
+          />
+          <div id="join-error" class="alert alert-error" style="display:none"></div>
+          <button class="ga-btn-unirse" id="btnUnirse">Unirse</button>
+        </div>
+      </div>
+
+      <!-- Columna derecha: imagen ilustrativa -->
+      <div class="ga-right">
+        <img
+          class="ga-image"
+          src="../../img/alumnos-clase.jpg"
+          alt="Alumnos aprendiendo en clase"
+        />
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../../js/api.js"></script>
+  <script src="../../js/socket.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

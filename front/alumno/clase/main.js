@@ -1,217 +1,202 @@
 // front/alumno/clase/main.js
-// Funcionalidades 5, 6, 7 (alumno): join socket, enviar preguntas, ver feed en tiempo real.
+// Pantalla "Clase" (alumno).
+//
+// Flujo: el alumno escribe su pregunta, elige categoría (obligatoria) y
+// el toggle de anónimo (sin efecto real en el backend actual — ver nota
+// más abajo), y la envía vía Socket.io (evento send_question). El feed
+// de la derecha se actualiza en vivo con question_update, que el server
+// emite a toda la sala cada vez que hay una pregunta nueva o fusionada.
+//
+// Requiere: js/api.js, js/socket.js, y que la pantalla anterior haya
+// guardado classId / classInfo en sessionStorage tras unirse a la clase.
 
-let socket = null;
-let classId = null;
-let classCode = null;
-let selectedCat = 'duda_puntual';
+const MAX_LEN = 500;
 
-const RISK_THRESHOLD = 60;
+let categoriaSeleccionada = null;
+let esAnonimo = true; // por defecto "Si", como en el mockup
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (!requiereAuth('alumno')) return;
+document.addEventListener("DOMContentLoaded", () => {
+  if (!requiereAuth("alumno")) return;
 
-  classId   = sessionStorage.getItem('classId');
-  classCode = sessionStorage.getItem('classCode');
-
-  if (!classId && !classCode) {
-    window.location.href = '../general/index.html';
+  const classId = sessionStorage.getItem("classId");
+  if (!classId) {
+    // Sin clase activa no hay nada que hacer en esta pantalla
+    window.location.href = "../general/index.html";
     return;
   }
 
-  initSocket();
-  initUI();
+  const usuario = obtenerUsuario();
+  pintarUsuario(usuario);
+  pintarNombreClase();
+
+  const textarea = document.getElementById("f-text");
+  const charCount = document.getElementById("charCount");
+  const colorBar = document.getElementById("colorBar");
+  const btnEnviar = document.getElementById("btnEnviar");
+  const errorBox = document.getElementById("send-error");
+
+  textarea.addEventListener("input", () => {
+    charCount.textContent = textarea.value.length;
+    ocultarError();
+  });
+
+  document.getElementById("btnAnonSi").addEventListener("click", () => setAnonimo(true));
+  document.getElementById("btnAnonNo").addEventListener("click", () => setAnonimo(false));
+
+  document.querySelectorAll(".cl-cat-btn").forEach((btn) => {
+    btn.addEventListener("click", () => seleccionarCategoria(btn));
+  });
+
+  btnEnviar.addEventListener("click", enviarPregunta);
+
+  const socket = obtenerSocket();
+
+  // Si el backend ya mandó class_info al unirse (pantalla anterior), puede
+  // volver a emitirlo en reconexiones; lo escuchamos por si refresca la página.
+  socket.on("class_info", (data) => {
+    sessionStorage.setItem("classId", data.classId);
+    sessionStorage.setItem(
+      "classInfo",
+      JSON.stringify({
+        name: data.name,
+        subject: data.subject,
+        course: data.course,
+        schedule: data.schedule,
+        professor: data.professor,
+      })
+    );
+    pintarNombreClase();
+  });
+
+  // Actualización en vivo de preguntas (propias y de otros alumnos)
+  socket.on("question_update", ({ question }) => {
+    if (!question) return;
+    agregarPreguntaAlFeed(question);
+  });
+
+  socket.on("error", (data) => {
+    mostrarError(data?.message || "Ocurrió un error en la clase.");
+  });
+
+  socket.on("kicked", (data) => {
+    alert(data?.message || "Fuiste expulsado de la clase.");
+    sessionStorage.removeItem("classId");
+    window.location.href = "../general/index.html";
+  });
+
+  /* ── Funciones internas ─────────────────────────────── */
+
+  function setAnonimo(valor) {
+    esAnonimo = valor;
+    document.getElementById("btnAnonSi").classList.toggle("active", valor === true);
+    document.getElementById("btnAnonNo").classList.toggle("active", valor === false);
+  }
+
+  function seleccionarCategoria(btn) {
+    document.querySelectorAll(".cl-cat-btn").forEach((b) => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    categoriaSeleccionada = btn.dataset.cat;
+    colorBar.classList.add("active");
+    ocultarError();
+  }
+
+  function enviarPregunta() {
+    const text = textarea.value.trim();
+
+    if (!text) {
+      mostrarError("Escribí tu pregunta antes de enviar.");
+      return;
+    }
+    if (text.length > MAX_LEN) {
+      mostrarError(`Máximo ${MAX_LEN} caracteres.`);
+      return;
+    }
+    if (!categoriaSeleccionada) {
+      mostrarError("Elegí una categoría para tu pregunta.");
+      return;
+    }
+
+    setCargando(true);
+
+    socket.emit("send_question", {
+      classId,
+      text,
+      category: categoriaSeleccionada,
+    });
+
+    // No esperamos una confirmación 1 a 1: el server responde a toda la
+    // sala con question_update, que ya está escuchado arriba y repinta
+    // el feed (incluida esta pregunta apenas vuelva).
+    textarea.value = "";
+    charCount.textContent = "0";
+    setCargando(false);
+  }
+
+  function setCargando(activo) {
+    btnEnviar.disabled = activo;
+    btnEnviar.textContent = activo ? "Enviando..." : "Enviar";
+  }
+
+  function mostrarError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = "block";
+  }
+
+  function ocultarError() {
+    errorBox.style.display = "none";
+  }
 });
 
-/* ── Socket ───────────────────────────────────────────── */
-function initSocket() {
-  socket = crearSocket();
-  if (!socket) { showToast('No se pudo conectar con el servidor', 'error'); return; }
-
-  socket.on('connect', () => {
-    document.getElementById('connStatus').className = 'badge badge-green';
-    document.getElementById('connStatus').textContent = '🟢 Conectado';
-    socket.emit('join_class', {
-      code: classCode,
-      role: 'alumno',
-      sessionId: socket.id,
-    });
-  });
-
-  socket.on('disconnect', () => {
-    document.getElementById('connStatus').className = 'badge badge-red';
-    document.getElementById('connStatus').textContent = '🔴 Desconectado';
-  });
-
-  socket.on('class_info', (cls) => {
-    classId = cls.classId;
-    document.getElementById('className').textContent    = cls.name;
-    document.getElementById('classSubject').textContent = cls.subject || '';
-    document.getElementById('classCourse').textContent  = cls.course  || '—';
-    document.getElementById('classSchedule').textContent = cls.schedule || '—';
-  });
-
-  socket.on('student_count', ({ count }) => {
-    document.getElementById('classCount').textContent = count;
-  });
-
-  // Lista actualizada de preguntas (ordenada por prioridad)
-  socket.on('questions_update', ({ questions }) => {
-    renderFeed(questions);
-  });
-
-  // Nueva pregunta llega (añadir al feed)
-  socket.on('new_question', ({ question }) => {
-    addOrUpdateQuestion(question);
-  });
-
-  // Pregunta actualizada (respondida, pospuesta, etc.)
-  socket.on('question_status', ({ questionId, status }) => {
-    updateQuestionStatus(questionId, status);
-  });
-
-  socket.on('kicked', ({ message }) => {
-    showToast(message, 'error');
-    setTimeout(() => window.location.href = '../general/index.html', 2000);
-  });
-
-  socket.on('error', ({ message }) => {
-    showToast(message, 'error');
-  });
-}
-
-/* ── UI ───────────────────────────────────────────────── */
-function initUI() {
-  // Categorías
-  document.querySelectorAll('.cat-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedCat = btn.dataset.cat;
-    });
-  });
-
-  // Contador de caracteres
-  const textarea = document.getElementById('questionText');
-  textarea.addEventListener('input', () => {
-    document.getElementById('charCount').textContent = textarea.value.length;
-  });
-
-  // Enviar pregunta
-  document.getElementById('btnSend').addEventListener('click', enviarPregunta);
-  textarea.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter') enviarPregunta();
-  });
-
-  // Inbox fuera de clase
-  document.getElementById('btnInbox').addEventListener('click', enviarInbox);
-}
-
-async function enviarPregunta() {
-  const text = document.getElementById('questionText').value.trim();
-  if (!text) { showToast('Escribí algo primero', 'error'); return; }
-
-  const anon = document.getElementById('anonCheck').checked;
-  const usuario = obtenerUsuario();
-
-  if (!socket || !socket.connected) {
-    showToast('Sin conexión con el servidor', 'error'); return;
-  }
-
-  socket.emit('send_question', {
-    classId,
-    text,
-    category: selectedCat,
-    anonymous: anon,
-    authorName: anon ? null : (usuario?.nombre || usuario?.email),
-  });
-
-  document.getElementById('questionText').value = '';
-  document.getElementById('charCount').textContent = '0';
-  showToast('Pregunta enviada ✓', 'success');
-}
-
-async function enviarInbox() {
-  const text = document.getElementById('inboxText').value.trim();
-  if (!text) { showToast('Escribí tu pregunta primero', 'error'); return; }
-  try {
-    await apiFetch('/questions', {
-      method: 'POST',
-      body: JSON.stringify({ classId, text, category: 'duda_puntual', status: 'inbox', anonymous: true }),
-    });
-    document.getElementById('inboxText').value = '';
-    showToast('Guardada para la próxima clase ✓', 'success');
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
 /* ── Feed ─────────────────────────────────────────────── */
-const questionsMap = new Map();
 
-function renderFeed(questions) {
-  questionsMap.clear();
-  questions.forEach(q => questionsMap.set(q.id, q));
-  redrawFeed();
+function agregarPreguntaAlFeed(question) {
+  const feed = document.getElementById("feed");
+  const empty = document.getElementById("feedEmpty");
+  if (empty) empty.style.display = "none";
+
+  const hora = new Date(question.createdAt || Date.now()).toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  // Nota: el backend no devuelve un nombre legible de usuario, solo un
+  // identificador de sesión interno. Como no hay campo real para "nombre
+  // visible" en el modelo de Question, siempre se muestra "Anónimo".
+  const div = document.createElement("div");
+  div.className = "cl-msg";
+  div.dataset.cat = question.category;
+  div.innerHTML = `
+    <div class="cl-msg-author">
+      <span>Anónimo</span>
+      <span class="cl-msg-time">${hora}</span>
+    </div>
+    <div class="cl-msg-bubble">${escapeHtml(question.text)}</div>
+  `;
+
+  feed.prepend(div);
 }
 
-function addOrUpdateQuestion(q) {
-  questionsMap.set(q.id, q);
-  redrawFeed();
+/* ── Helpers ──────────────────────────────────────────── */
+
+function pintarUsuario(u) {
+  if (!u) return;
+  document.getElementById("userName").textContent = u.nombre || u.email || "Usuario";
 }
 
-function updateQuestionStatus(questionId, status) {
-  const q = questionsMap.get(questionId);
-  if (q) { q.status = status; redrawFeed(); }
-}
-
-function redrawFeed() {
-  const feed = document.getElementById('questionFeed');
-  const count = document.getElementById('feedCount');
-
-  const list = [...questionsMap.values()].filter(q => q.status !== 'inbox');
-  count.textContent = list.length;
-
-  if (!list.length) {
-    feed.innerHTML = `<div class="empty-feed"><span class="icon">🤫</span>Todavía no hay preguntas. ¡Sé el primero!</div>`;
-    return;
+function pintarNombreClase() {
+  const raw = sessionStorage.getItem("classInfo");
+  if (!raw) return;
+  try {
+    const info = JSON.parse(raw);
+    const titulo = info.course ? `${info.name} (${info.course})` : info.name;
+    document.getElementById("className").textContent = titulo || "Clase";
+  } catch {
+    /* si no se puede parsear, se deja el título por defecto */
   }
-
-  // Actualizar barra de riesgo (basada en la pregunta de mayor prioridad)
-  const maxPriority = Math.max(...list.map(q => q.priority || 0));
-  const riskPct = Math.min(100, maxPriority * 20);
-  document.getElementById('riskBar').style.width = riskPct + '%';
-  document.getElementById('riskBanner').classList.toggle('show', riskPct >= RISK_THRESHOLD);
-
-  feed.innerHTML = list.map(q => questionHTML(q)).join('');
 }
 
-const CAT_BORDER = {
-  desarrollo:  'var(--cat-desarrollo)',
-  duda:        'var(--cat-duda)',
-  curiosidad:  'var(--cat-curiosidad)',
-  repetir:     'var(--cat-repetir)',
-  significado: 'var(--cat-significado)',
-};
-
-function questionHTML(q) {
-  const color = CAT_BORDER[q.category] || 'var(--cat-duda)';
-  const done = q.status === 'respondida';
-  return `
-    <div class="question-item" style="border-left-color:${color}">
-      <div class="qi-top">
-        <span class="qi-author">${q.anonymous || !q.authorName ? '🎭 Anónimo' : `👤 ${q.authorName}`}</span>
-        ${catTag(q.category)}
-        ${(q.priority > 1) ? `<span class="priority-badge">🔥 ×${q.priority}</span>` : ''}
-        <span class="qi-time">${formatearHora(q.createdAt)}</span>
-      </div>
-      <p class="qi-text">${escapeHTML(q.text)}</p>
-      <span class="qi-status ${done ? 'respondida' : 'pendiente'}">
-        ${done ? '✅ Respondida' : '⏳ Pendiente'}
-      </span>
-    </div>`;
-}
-
-function escapeHTML(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
+  );
 }

@@ -17,7 +17,7 @@ formLogin.addEventListener("submit", async (evento) => {
   try {
     const respuesta = await apiFetch("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ usuario, password }),
+      body: JSON.stringify({ email:usuario, password }),
     });
 
     guardarSesion(respuesta.token, respuesta.usuario);

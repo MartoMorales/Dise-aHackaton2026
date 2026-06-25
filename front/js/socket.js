@@ -1,21 +1,14 @@
 // front/js/socket.js
-let _socketInstance = null;
+// Singleton de Socket.io compartido entre las pantallas de alumno.
+// Expone obtenerSocket() para que inicio/main.js y clase/main.js
+// usen siempre la misma conexión (no se reconecta en cada pantalla).
+
+let _socket = null;
 
 function obtenerSocket() {
-  if (!_socketInstance) {
-    if (typeof io === "undefined") {
-      console.error("Socket.io no está cargado en el HTML.");
-      return null;
-    }
-    // Determinar la URL del servidor
-    const serverUrl = window.location.hostname === "localhost"
-      ? "http://localhost:3000"
-      : window.location.origin;
+  if (_socket && _socket.connected) return _socket;
 
-    _socketInstance = io(serverUrl, {
-      auth: { token: localStorage.getItem("token") },
-      transports: ["websocket"],
-    });
-  }
-  return _socketInstance;
+  // crearSocket() está definido en api.js (cargado antes que este archivo)
+  _socket = crearSocket();
+  return _socket;
 }

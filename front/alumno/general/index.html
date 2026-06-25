@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unirse a clase — Hide &amp; Speak</title>
+  <title>Mis clases — Hide &amp; Speak</title>
   <link rel="stylesheet" href="../../css/estilos.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -15,49 +15,51 @@
       <img src="../../img/Solo_logo-removebg-preview.png" alt="Hide & Speak logo" />
       Hide &amp; <span class="accent">Speak</span>
     </a>
-    <button class="ga-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
+    <div class="ga-header-right">
+      <div class="ga-avatar" id="userAvatar">A</div>
+      <button class="ga-user" id="userName" onclick="cerrarSesion()" title="Cerrar sesión">Nombre de Usuario</button>
+    </div>
   </header>
 
-  <!-- Contenido -->
+  <!-- Unirse por código -->
+  <section class="join-bar">
+    <input
+      class="ga-input"
+      type="text"
+      id="joinCodeInput"
+      maxlength="6"
+      autocomplete="off"
+      placeholder="Código de clase"
+    />
+    <button class="ga-btn-unirse" id="btnJoin">Unirse</button>
+  </section>
+
+  <!-- Clases activas ahora -->
   <main class="ga-wrap">
-    <div class="ga-panel">
+    <h2 class="section-title">Clases activas ahora</h2>
+    <div class="class-grid" id="activeGrid"></div>
 
-      <!-- Columna izquierda: bienvenida + form de código -->
-      <div class="ga-left">
-        <h1 class="ga-title">
-          ¡Bienvenido a Hide &amp; <span class="accent">Speak</span>,
-          <span id="userFirstName">Usuario</span>!
-        </h1>
-
-        <div class="ga-joinbox">
-          <label for="f-code" class="ga-label">Ingresa el codigo de tu clase</label>
-          <input
-            class="ga-input"
-            type="text"
-            id="f-code"
-            maxlength="6"
-            autocomplete="off"
-            placeholder="______"
-          />
-          <div id="join-error" class="alert alert-error" style="display:none"></div>
-          <button class="ga-btn-unirse" id="btnUnirse">Unirse</button>
-        </div>
-      </div>
-
-      <!-- Columna derecha: imagen ilustrativa -->
-      <div class="ga-right">
-        <img
-          class="ga-image"
-          src="../../img/alumnos-clase.jpg"
-          alt="Alumnos aprendiendo en clase"
-        />
-      </div>
-
-    </div>
+    <h2 class="section-title">Todas mis clases</h2>
+    <div class="class-grid" id="allGrid"></div>
   </main>
 
+  <!-- Modal confirmación unirse -->
+  <div class="modal-overlay" id="modal-join">
+    <div class="modal">
+      <h3>¿Unirte a esta clase?</h3>
+      <p><strong>Materia:</strong> <span id="mji-subject">—</span></p>
+      <p><strong>Curso:</strong>   <span id="mji-course">—</span></p>
+      <p><strong>Código:</strong>  <span id="mji-code">—</span></p>
+      <div class="modal-actions">
+        <button class="ga-btn-unirse" id="btnConfirmJoin">Confirmar</button>
+        <button class="btn-secondary" onclick="cerrarModal('modal-join')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
   <script src="../../js/api.js"></script>
-  <script src="../../js/socket.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

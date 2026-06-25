@@ -1,14 +1,26 @@
 // front/alumno/clase/main.js
+// Pantalla "Clase" (alumno).
+//
+// Flujo: el alumno escribe su pregunta, elige categoría (obligatoria) y
+// el toggle de anónimo (sin efecto real en el backend actual — ver nota
+// más abajo), y la envía vía Socket.io (evento send_question). El feed
+// de la derecha se actualiza en vivo con question_update, que el server
+// emite a toda la sala cada vez que hay una pregunta nueva o fusionada.
+//
+// Requiere: js/api.js, js/socket.js, y que la pantalla anterior haya
+// guardado classId / classInfo en sessionStorage tras unirse a la clase.
+
 const MAX_LEN = 500;
 
 let categoriaSeleccionada = null;
-let esAnonimo = true; 
+let esAnonimo = true; // por defecto "Si", como en el mockup
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!requiereAuth("alumno")) return;
 
   const classId = sessionStorage.getItem("classId");
   if (!classId) {
+    // Sin clase activa no hay nada que hacer en esta pantalla
     window.location.href = "../general/index.html";
     return;
   }
@@ -37,10 +49,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnEnviar.addEventListener("click", enviarPregunta);
 
-  // CORRECCIÓN: Ahora trae la instancia compartida de front/js/socket.js
-  const socket = obtenerSocket(); 
-  if (!socket) return;
+  const socket = obtenerSocket();
 
+  // Si el alumno llegó desde general/index.html (irAClase), el socket
+  // existe pero todavía no emitió join_class — hacerlo ahora.
+  const classCode = sessionStorage.getItem("classCode");
+  if (classCode && !socket.data?.joined) {
+    const sessionId = sessionStorage.getItem("sessionId") ||
+      ("s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    sessionStorage.setItem("sessionId", sessionId);
+    socket.emit("join_class", { code: classCode, role: "alumno", sessionId });
+    if (socket.data) socket.data.joined = true;
+  }
+
+  // Historial de preguntas ya existentes en la clase al momento de unirse
+  socket.on("questions_history", ({ questions }) => {
+    if (!questions || !questions.length) return;
+    // Pintamos de más antigua a más nueva para que prepend las deje en orden cronológico
+    [...questions].reverse().forEach(agregarPreguntaAlFeed);
+  });
+
+  // Si el backend ya mandó class_info al unirse (pantalla anterior), puede
+  // volver a emitirlo en reconexiones; lo escuchamos por si refresca la página.
   socket.on("class_info", (data) => {
     sessionStorage.setItem("classId", data.classId);
     sessionStorage.setItem(
@@ -56,6 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pintarNombreClase();
   });
 
+  // Actualización en vivo de preguntas (propias y de otros alumnos)
   socket.on("question_update", ({ question }) => {
     if (!question) return;
     agregarPreguntaAlFeed(question);
@@ -111,6 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
       category: categoriaSeleccionada,
     });
 
+    // No esperamos una confirmación 1 a 1: el server responde a toda la
+    // sala con question_update, que ya está escuchado arriba y repinta
+    // el feed (incluida esta pregunta apenas vuelva).
     textarea.value = "";
     charCount.textContent = "0";
     setCargando(false);
@@ -143,6 +177,9 @@ function agregarPreguntaAlFeed(question) {
     minute: "2-digit",
   });
 
+  // Nota: el backend no devuelve un nombre legible de usuario, solo un
+  // identificador de sesión interno. Como no hay campo real para "nombre
+  // visible" en el modelo de Question, siempre se muestra "Anónimo".
   const div = document.createElement("div");
   div.className = "cl-msg";
   div.dataset.cat = question.category;
@@ -161,11 +198,7 @@ function agregarPreguntaAlFeed(question) {
 
 function pintarUsuario(u) {
   if (!u) return;
-  const elementoNombre = document.getElementById("userName");
-  // CORRECCIÓN: Validamos de forma segura que el elemento exista en este HTML específico
-  if (elementoNombre) {
-    elementoNombre.textContent = u.nombre || u.email || "Usuario";
-  }
+  document.getElementById("userName").textContent = u.nombre || u.email || "Usuario";
 }
 
 function pintarNombreClase() {
@@ -176,7 +209,7 @@ function pintarNombreClase() {
     const titulo = info.course ? `${info.name} (${info.course})` : info.name;
     document.getElementById("className").textContent = titulo || "Clase";
   } catch {
-    /* error bypass */
+    /* si no se puede parsear, se deja el título por defecto */
   }
 }
 

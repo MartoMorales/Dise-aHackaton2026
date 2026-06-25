@@ -98,7 +98,7 @@ function cardHTML(q) {
     ? q.author_session
     : "Anónimo";
   const prioTag = (q.priority > 1)
-    ? `<span style="margin-left:8px;color:#D97706;font-size:13px;font-weight:700;">🔥 ×${q.priority}</span>`
+    ? `<span style="margin-left:8px;color:#D97706;font-size:13px;font-weight:700;"></span>`
     : "";
 
   return `

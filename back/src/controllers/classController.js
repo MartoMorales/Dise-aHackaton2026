@@ -1,4 +1,3 @@
-// controllers/classController.js — Funcionalidades 3, 4 y 5
 const Class = require("../models/Class");
 const { generateUniqueCode } = require("../utils/codeGenerator");
 
@@ -74,6 +73,7 @@ async function joinByCode(req, res) {
     res.json({
       clase: {
         _id: cls.id,
+        id: cls.id,
         name: cls.name,
         subject: cls.subject,
         course: cls.course,
@@ -100,4 +100,19 @@ async function closeClass(req, res) {
   }
 }
 
-module.exports = { createClass, getMyClasses, getActiveClasses, hostClass, joinByCode, closeClass };
+/** DELETE /api/classes/:id */
+async function deleteClass(req, res) {
+  try {
+    const cls = await Class.findByProfessorAndId(req.params.id, req.user.id);
+    if (!cls) {
+      return res.status(404).json({ message: "Clase no encontrada o sin permiso" });
+    }
+    await Class.delete(cls.id);
+    res.json({ message: "Clase eliminada" });
+  } catch (err) {
+    console.error("Error en deleteClass:", err.message);
+    res.status(500).json({ message: "Error al eliminar la clase" });
+  }
+}
+
+module.exports = { createClass, getMyClasses, getActiveClasses, hostClass, joinByCode, closeClass, deleteClass };

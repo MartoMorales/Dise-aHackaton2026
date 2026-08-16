@@ -200,14 +200,13 @@
           </div>
         </div>
 
-        <a href="#" class="forgot">¿Olvidaste tu contraseña?</a>
-
         <button type="submit" class="btn-login" id="btnLogin">
           <div class="spinner"></div>
           <span class="btn-label">Iniciar sesión</span>
         </button>
       </form>
 
+      <p class="signup-line">¿No tenés cuenta? <a href="register.html">Registrate</a></p>
     </div>
   </main>
 
@@ -222,6 +221,12 @@
       input.type = oculta ? "text" : "password";
       // Con la contraseña oculta mostramos el palito; al verla, lo sacamos
       btn.classList.toggle("is-off", !oculta);
+    });
+
+    // El login con Google todavía no está implementado en el backend
+    document.getElementById("btnGoogle").addEventListener("click", () => {
+      errorDiv.textContent = "El login con Google todavía no está disponible. Usá tu email institucional.";
+      errorDiv.style.display = "block";
     });
   </script>
 </body>

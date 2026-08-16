@@ -4,6 +4,9 @@
 const SVG_TRASH =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 
+const SVG_BAN =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+
 const CAT_INFO = {
   desarrollo:   { label: "Desarrollar",         color: "#7C3AED" },
   duda_puntual: { label: "Duda puntual",         color: "#2563EB" },
@@ -110,6 +113,7 @@ function cardHTML(q) {
         <div class="msg-actions">
           <button class="msg-btn msg-ok"  onclick="responder('${q.id}')"  title="Marcar como respondida">✓</button>
           <button class="msg-btn msg-del" onclick="eliminar('${q.id}')"   title="Eliminar">${SVG_TRASH}</button>
+          <button class="msg-btn msg-ban" onclick="banear('${q.id}', '${encodeURIComponent(q.author_session)}')" title="Banear a este alumno">${SVG_BAN}</button>
         </div>
       </div>
     </div>`;
@@ -130,6 +134,24 @@ async function eliminar(questionId) {
     render();
   } catch (err) {
     showToast("Error al eliminar: " + err.message, "error");
+  }
+}
+
+async function banear(questionId, encodedSessionId) {
+  const sessionId = decodeURIComponent(encodedSessionId);
+  if (!confirm("¿Banear a este alumno? No va a poder volver a enviar preguntas ni reingresar a esta clase.")) return;
+  try {
+    await apiFetch("/moderation/ban", {
+      method: "POST",
+      body: JSON.stringify({ sessionId }),
+    });
+    await apiFetch(`/moderation/question/${questionId}`, { method: "DELETE" });
+    if (socket) socket.emit("kick_user", { targetSessionId: sessionId, classId });
+    preguntasMap.delete(questionId);
+    render();
+    showToast("Alumno baneado", "success");
+  } catch (err) {
+    showToast("Error al banear: " + err.message, "error");
   }
 }
 

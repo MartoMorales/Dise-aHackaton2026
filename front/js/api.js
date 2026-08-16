@@ -1,8 +1,11 @@
 // front/js/api.js
 // Helpers compartidos: URL base, sesión, fetch autenticado, toasts
 
-// En producción (Vercel) la API está en el mismo origen.
-// En desarrollo cambiá esto a "http://localhost:3000/api"
+// El backend (back/src/app.js) sirve este front como estático y expone
+// la API bajo /api en el mismo origen y proceso — no hace falta URL
+// absoluta ni configurar CORS aparte. Ver README para notas de deploy
+// (requiere un host con proceso Node persistente por Socket.io, no
+// funciones serverless tipo Vercel Functions).
 const API_BASE_URL = "/api";
 
 /* ── Sesión ─────────────────────────────────────────── */
@@ -37,16 +40,13 @@ function requiereAuth(rolRequerido) {
 }
 
 /* ── Fetch wrapper ───────────────────────────────────── */
-const DEMO_TOKEN = "demo-token";
-
 async function apiFetch(ruta, opciones = {}) {
   const token = obtenerToken();
   const headers = {
     "Content-Type": "application/json",
     ...(opciones.headers || {}),
   };
-  // No enviar el demo-token al backend (no es un JWT válido)
-  if (token && token !== DEMO_TOKEN) headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const respuesta = await fetch(`${API_BASE_URL}${ruta}`, {
     ...opciones,
